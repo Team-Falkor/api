@@ -1,12 +1,5 @@
-import type { RouteHandler } from "../@types";
+import type { RouterHandler } from "@/handlers/router";
 
-export const route: RouteHandler = {
-  middleware: [
-    async (request, params) => {
-      console.log(`middleware ${request.url}`);
-    },
-  ],
-  handler: async ({ params, body }) => {
-    return new Response(`hello world!!`);
-  },
+export const GET: RouterHandler = async (context) => {
+  return new Response("Hello World!");
 };

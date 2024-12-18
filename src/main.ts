@@ -1,11 +1,15 @@
-import { fileRouter } from "@/handlers/router";
-import { serve } from "bun";
+import { join } from "node:path";
+import { Cache } from "./handlers/cache";
+import { Router } from "./handlers/router";
 
 const PORT = process.env.PORT || 3000;
+const routers = join(__dirname, "routes");
+const cachePath = join(__dirname, "..", "cache.json");
 
-console.log(`Server running on PORT ${PORT}`);
-
-serve({
+new Router({
+  dir: routers,
   port: PORT,
-  fetch: (request) => fileRouter(request),
-});
+}).start();
+
+export const cache = new Cache(cachePath);
+cache.startTimer();

@@ -1,0 +1,68 @@
+import type { FileSystemRouter, Server } from "bun";
+import type { Handlers, Method, RouterMiddleware } from "./@types";
+import { RouterContext } from "./context";
+import { Runner } from "./runner";
+
+export class Router {
+  private middlewares: RouterMiddleware[] = [];
+  private router: FileSystemRouter;
+  private server: Server | undefined;
+
+  constructor(
+    public options?: { dir?: string; hostname?: string; port?: number }
+  ) {
+    this.router = new Bun.FileSystemRouter({
+      style: "nextjs",
+      dir: options?.dir || "./api",
+      fileExtensions: [".ts", ".js"],
+    });
+  }
+
+  setMiddlewares(middlewares: RouterMiddleware[]) {
+    this.middlewares = middlewares;
+  }
+
+  start(callback?: (server: Server) => undefined) {
+    const router = this.router;
+    const middlewares = this.middlewares;
+
+    console.log(`Server started!!`);
+
+    this.server = Bun.serve({
+      hostname: this.options?.hostname,
+      port: this.options?.port,
+      async fetch(request, server) {
+        const notFound = new Response(null, { status: 404 });
+
+        const method = request.method.toUpperCase() as Method;
+        const pathname = new URL(request.url).pathname;
+
+        const matchedRoute = router.match(pathname);
+        if (!matchedRoute) return notFound;
+
+        const handlers: Handlers = await import(matchedRoute.filePath);
+        const handler = handlers[method] || handlers.default;
+        if (!handler || typeof handler !== "function") return notFound;
+
+        if (handlers.middlewares) middlewares.push(...handlers.middlewares);
+        if (handlers[`${method}_middlewares`])
+          middlewares.push(...handlers[`${method}_middlewares`]);
+
+        const runner = new Runner(middlewares);
+        const context = new RouterContext(request, matchedRoute, server);
+        return runner.exec(handler, context) || notFound;
+      },
+    });
+
+    callback && callback(this.server);
+  }
+
+  stop(closeActiveConnections?: boolean) {
+    this.server?.stop(closeActiveConnections);
+  }
+
+  restart(callback?: (server: Server) => undefined) {
+    this.stop(true);
+    this.start(callback);
+  }
+}

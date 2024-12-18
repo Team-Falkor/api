@@ -7,12 +7,14 @@
     "dev": "bun run --watch ./src/main.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/ms": "^0.7.34"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "ms": "^2.1.3",
     "zod": "^3.24.1"
   }
 }
