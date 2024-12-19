@@ -1,68 +1,99 @@
+import { Console } from "@/utils";
 import type { FileSystemRouter, Server } from "bun";
 import type { Handlers, Method, RouterMiddleware } from "./@types";
 import { RouterContext } from "./context";
 import { Runner } from "./runner";
 
+export const console = new Console({
+  prefix: "[Router] ",
+});
 export class Router {
   private middlewares: RouterMiddleware[] = [];
   private router: FileSystemRouter;
   private server: Server | undefined;
 
   constructor(
-    public options?: { dir?: string; hostname?: string; port?: number }
+    private options: { dir?: string; hostname?: string; port?: number } = {}
   ) {
     this.router = new Bun.FileSystemRouter({
       style: "nextjs",
-      dir: options?.dir || "./api",
+      dir: this.options.dir || "./api",
       fileExtensions: [".ts", ".js"],
     });
   }
 
-  setMiddlewares(middlewares: RouterMiddleware[]) {
-    this.middlewares = middlewares;
+  setMiddlewares(middlewares: RouterMiddleware[]): void {
+    this.middlewares = [...middlewares]; // Clone the array to avoid mutations.
   }
 
-  start(callback?: (server: Server) => undefined) {
-    const router = this.router;
-    const middlewares = this.middlewares;
+  async start(callback?: (server: Server) => void): Promise<void> {
+    const { router, middlewares } = this;
 
-    console.log(`Server started!!`);
+    console.info(`Server starting on port ${this.options.port || 3000}...`);
 
     this.server = Bun.serve({
-      hostname: this.options?.hostname,
-      port: this.options?.port,
+      hostname: this.options.hostname,
+      port: this.options.port,
       async fetch(request, server) {
-        const notFound = new Response(null, { status: 404 });
+        const notFound = new Response("Not Found", { status: 404 });
+        try {
+          const method = request.method.toUpperCase() as Method;
+          const url = new URL(request.url);
+          const pathname = url.pathname;
 
-        const method = request.method.toUpperCase() as Method;
-        const pathname = new URL(request.url).pathname;
+          const matchedRoute = router.match(pathname);
+          if (!matchedRoute) return notFound;
 
-        const matchedRoute = router.match(pathname);
-        if (!matchedRoute) return notFound;
+          const safeFilePath = matchedRoute.filePath; // File path validation can be enhanced if needed.
+          if (!safeFilePath) return notFound;
 
-        const handlers: Handlers = await import(matchedRoute.filePath);
-        const handler = handlers[method] || handlers.default;
-        if (!handler || typeof handler !== "function") return notFound;
+          const handlers: Handlers = await import(safeFilePath);
+          const handler = handlers[method] || handlers.default;
 
-        if (handlers.middlewares) middlewares.push(...handlers.middlewares);
-        if (handlers[`${method}_middlewares`])
-          middlewares.push(...handlers[`${method}_middlewares`]);
+          if (!handler || typeof handler !== "function") {
+            console.warn(`No valid handler found for ${method} at ${pathname}`);
+            return notFound;
+          }
 
-        const runner = new Runner(middlewares);
-        const context = new RouterContext(request, matchedRoute, server);
-        return runner.exec(handler, context) || notFound;
+          const routeMiddlewares: RouterMiddleware[] = [
+            ...(handlers.middlewares || []),
+            ...(handlers[`${method}_middlewares`] || []),
+          ];
+
+          const runner = new Runner([...middlewares, ...routeMiddlewares]);
+          const context = new RouterContext(request, matchedRoute, server);
+
+          return (await runner.exec(handler, context)) || notFound;
+        } catch (error) {
+          console.error("Error during request handling:", error);
+          return new Response("Internal Server Error", { status: 500 });
+        }
       },
     });
 
-    callback && callback(this.server);
+    console.info(
+      `Server started on ${this.options.hostname || "localhost"}:${
+        this.options.port || 3000
+      }`
+    );
+    callback?.(this.server);
   }
 
-  stop(closeActiveConnections?: boolean) {
-    this.server?.stop(closeActiveConnections);
+  stop(closeActiveConnections = false): void {
+    if (this.server) {
+      console.info("Stopping server...");
+      this.server.stop(closeActiveConnections);
+      console.info("Server stopped.");
+    } else {
+      console.warn("Server is not running.");
+    }
   }
 
-  restart(callback?: (server: Server) => undefined) {
+  restart(callback?: (server: Server) => void): void {
+    console.info("Restarting server...");
     this.stop(true);
-    this.start(callback);
+    this.start(callback).catch((error) => {
+      console.error("Error restarting server:", error);
+    });
   }
 }

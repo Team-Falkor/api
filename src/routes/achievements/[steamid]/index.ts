@@ -1,29 +1,37 @@
 import type { IGetSchemaForGame } from "@/@types";
-import type { RouterContext, RouterHandler } from "@/handlers/router";
+import type { RouterHandler } from "@/handlers/router";
 import { cache } from "@/main";
+import { Console } from "@/utils";
 
 const { STEAM_API_KEY } = Bun.env;
 
-export const GET: RouterHandler = async (context) => {
-  const { steamid: id } = context.params;
-  const { lang } = context.query;
+export const console = new Console({
+  prefix: "[Steam Achievements] ",
+});
+
+export const GET: RouterHandler = async ({ params, query }) => {
+  const { steamid: appId } = params;
+  const lang = query.lang || "en";
+  const cacheKey = `steamSchema:${appId}:${lang}`;
+
+  // Cache TTL in milliseconds (24 hours)
+  const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+  // Return cached response if available
+  const cachedData = cache.get(cacheKey);
+  if (cachedData) {
+    return new Response(JSON.stringify(cachedData), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const apiUrl = `https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v0002/?key=${STEAM_API_KEY}&appid=${appId}&l=${lang}&format=json`;
 
   try {
-    const cached = cache.get(`steamSchema:${id}:${lang ?? "en"}`);
-    if (cached) {
-      return new Response(JSON.stringify(cached), {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-    }
-
-    const response = await fetch(
-      `https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v0002/?key=${STEAM_API_KEY}&appid=${id}&l=${lang}&format=json`
-    );
+    const response = await fetch(apiUrl);
 
     if (!response.ok) {
-      console.log({
+      console.warn("Steam API Request Failed", {
         status: response.status,
         statusText: response.statusText,
         url: response.url,
@@ -33,18 +41,14 @@ export const GET: RouterHandler = async (context) => {
 
     const data: IGetSchemaForGame = await response.json();
 
-    cache.set(`steamSchema:${id}:${lang ?? "en"}`, data, 60 * 60 * 24);
+    // Cache the response with a 24-hour TTL in milliseconds
+    cache.set(cacheKey, data, CACHE_TTL_MS);
+
     return new Response(JSON.stringify(data), {
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.log({ error });
-    return new Response("Not Found", { status: 404 });
+    console.error("Error fetching Steam schema", { error });
+    return new Response("Internal Server Error", { status: 500 });
   }
-};
-
-export default (context: RouterContext) => {
-  console.log(context);
 };

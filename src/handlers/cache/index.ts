@@ -1,28 +1,34 @@
 import type { CacheItem } from "@/@types";
+import { Console } from "@/utils";
+import { readFile, writeFile } from "fs/promises";
 import ms from "ms";
 
-const debug = Bun.env.DEBUG === "true";
+export const console = new Console({
+  prefix: "[Cache] ",
+});
 
-export class Cache<T = any> {
-  static instance: Cache;
+const debug = process.env.DEBUG === "true";
+
+export class Cache<T = unknown> {
   private readonly cache: Map<string, CacheItem<T>> = new Map();
   private timerId: NodeJS.Timer | null = null;
   private readonly filePath: string;
 
   constructor(filePath: string) {
     this.filePath = filePath;
-    this.loadFromFile();
+    this.loadCache();
   }
 
-  // Load cache from the file
-  private async loadFromFile(): Promise<void> {
+  // Load cache from file
+  private async loadCache(): Promise<void> {
     try {
-      const data = Bun.file(this.filePath);
-      if (!(await data.exists())) {
-        console.log(`Cache file ${this.filePath} not found, creating new one`);
-        Bun.write(this.filePath, "[]");
+      const data = await readFile(this.filePath, "utf-8").catch(() => "[]");
+      const parsed: [string, CacheItem<T>][] = JSON.parse(data);
+
+      if (!Array.isArray(parsed)) {
+        throw new Error("Invalid cache format. Expected an array.");
       }
-      const parsed: [string, CacheItem<T>][] = await data.json();
+
       const now = Date.now();
       this.cache.clear();
       for (const [key, item] of parsed) {
@@ -32,111 +38,139 @@ export class Cache<T = any> {
       }
 
       if (debug) {
-        console.log(
-          `Loaded ${this.cache.size} items from cache file ${this.filePath}`
+        console.info(
+          `Loaded ${this.cache.size} items from cache: ${this.filePath}`
         );
       }
     } catch (error) {
-      console.error("Failed to load cache from file:", error);
+      console.error(
+        `Error loading cache from file (${this.filePath}): ${
+          (error as Error).message
+        }`
+      );
     }
   }
 
-  // Save cache to the file
-  private async saveToFile(): Promise<void> {
+  // Save cache to file
+  private async saveCache(): Promise<void> {
+    if (this.cache.size === 0) {
+      if (debug) {
+        console.warn("Skipping save: Cache is empty.");
+      }
+      return; // Avoid overwriting with an empty state
+    }
+
     try {
       const data = JSON.stringify(Array.from(this.cache.entries()));
-      await Bun.write(this.filePath, data);
+      await writeFile(this.filePath, data, { encoding: "utf-8" });
+
       if (debug) {
-        console.log(
-          `Saved ${this.cache.size} items to cache file ${this.filePath}`
+        console.info(
+          `Saved ${this.cache.size} items to cache: ${this.filePath}`
         );
       }
     } catch (error) {
-      console.error("Failed to save cache to file:", error);
+      console.error(`Error saving cache to file (${this.filePath}):`, error);
     }
   }
 
-  // Retrieves an item from the cache
+  // Get an item from the cache
   public get(key: string): T | null {
     const item = this.cache.get(key);
-    if (item) {
+    if (!item) return null;
+
+    if (item.ttl && item.ttl < Date.now()) {
       if (debug) {
-        console.log(`Cache item ${key} found`);
+        console.info(`Cache item expired: ${key}`);
       }
-      if (item.ttl && item.ttl < Date.now()) {
-        if (debug) {
-          console.log(`Cache item ${key} expired`);
-        }
-        this.delete(key); // Expired, delete it
-        return null;
-      }
-      return item.value;
+      this.delete(key);
+      return null;
     }
-    return null;
+
+    if (debug) {
+      console.info(`Cache hit: ${key}`);
+    }
+    return item.value;
   }
 
-  // Sets an item in the cache
-  public set(key: string, value: T, ttl: number): void {
-    const expirationTime = Date.now() + ttl;
+  // Set an item in the cache
+  public set(key: string, value: T, ttl: string | number): void {
+    const expirationTime =
+      Date.now() + (typeof ttl === "string" ? ms(ttl) : ttl);
     this.cache.set(key, { value, ttl: expirationTime });
+
+    if (debug) {
+      console.info(`Cache set: ${key}, expires in ${ttl}`);
+    }
   }
 
-  // Deletes a specific key from the cache
+  // Delete a specific key from the cache
   public delete(key: string): void {
-    this.cache.delete(key);
+    if (this.cache.delete(key) && debug) {
+      console.info(`Cache delete: ${key}`);
+    }
   }
 
-  // Clears the entire cache
+  // Clear the entire cache
   public clear(): void {
     this.cache.clear();
-  }
-
-  // Removes expired items from the cache
-  private removeExpired(): void {
-    const now = Date.now();
-    for (const [key, { ttl }] of this.cache) {
-      if (ttl && ttl < now) {
-        this.cache.delete(key);
-      }
+    if (debug) {
+      console.info("Cache cleared");
     }
   }
 
-  // Returns the number of items in the cache
+  // Remove expired items
+  private removeExpired(): void {
+    const now = Date.now();
+    const expiredKeys: string[] = [];
+    for (const [key, { ttl }] of this.cache) {
+      if (ttl && ttl < now) {
+        expiredKeys.push(key);
+      }
+    }
+    expiredKeys.forEach((key) => this.cache.delete(key));
+    if (debug && expiredKeys.length > 0) {
+      console.info(`Removed expired items: ${expiredKeys.length}`);
+    }
+  }
+
+  // Get the current size of the cache
   public size(): number {
     return this.cache.size;
   }
 
-  // Starts a timer to periodically remove expired items and save to file
-  public startTimer(interval = 10000): void {
+  // Start periodic cleanup and save
+  public startTimer(interval: number = 10000): void {
     if (this.timerId) {
-      clearInterval(this.timerId); // Ensure only one interval is active
+      clearInterval(this.timerId);
     }
     this.timerId = setInterval(() => {
       this.removeExpired();
-      this.saveToFile();
+      this.saveCache();
     }, interval);
+
     if (debug) {
-      console.log(`Started timer with interval ${ms(interval)}`);
+      console.info(`Cache timer started with interval: ${ms(interval)}`);
     }
   }
 
-  // Stops the timer if it is running
+  // Stop periodic cleanup
   public stopTimer(): void {
     if (this.timerId) {
       clearInterval(this.timerId);
       this.timerId = null;
       if (debug) {
-        console.log("Stopped timer");
+        console.info("Cache timer stopped");
       }
     }
   }
 
-  // Ensures cache is saved to file when the process exits
+  // Save and clean up on close
   public async close(): Promise<void> {
     this.stopTimer();
-    await this.saveToFile();
+    await this.saveCache();
     if (debug) {
-      console.log(`Closed cache, saved to file ${this.filePath}`);
+      console.info(`Cache closed and saved to file: ${this.filePath}`);
     }
   }
 }
