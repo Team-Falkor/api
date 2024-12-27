@@ -63,7 +63,15 @@ export class Router {
           const runner = new Runner([...middlewares, ...routeMiddlewares]);
           const context = new RouterContext(request, matchedRoute, server);
 
-          return (await runner.exec(handler, context)) || notFound;
+          const res = await runner.exec(handler, context);
+
+          res.headers.set("Access-Control-Allow-Origin", "*");
+          res.headers.set(
+            "Access-Control-Allow-Methods",
+            "GET, POST, PUT, DELETE, OPTIONS"
+          );
+
+          return res || notFound;
         } catch (error) {
           console.error("Error during request handling:", error);
           return new Response("Internal Server Error", { status: 500 });
