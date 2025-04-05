@@ -71,6 +71,10 @@ class Console {
     console.log(this.formatMessage("success", ...messageParts));
   }
 
+  debug(...messageParts: unknown[]): void {
+    console.debug(this.formatMessage("debug", ...messageParts));
+  }
+
   // Utility to add text styles
   styleText(
     text: string,
