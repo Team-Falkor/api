@@ -2,14 +2,12 @@ import type { MatchedRoute, Server } from "bun";
 
 export class RouterContext {
   responseInit: ResponseInit = {};
-  body: Promise<unknown>;
-
+  
   constructor(
     public request: Request,
     public matchedRoute: MatchedRoute,
     public server: Server
   ) {
-    this.body = this.getBody();
   }
 
   get url(): URL {
@@ -25,6 +23,10 @@ export class RouterContext {
   }
 
   private async getBody(): Promise<unknown> {
-    return this.request.body ? await this.request.json() : void 0;
+    try {
+      return this.request.body ? await this.request.json() : void 0;
+    } catch (error) {
+      throw new Error("Invalid JSON");
+    }
   }
 }

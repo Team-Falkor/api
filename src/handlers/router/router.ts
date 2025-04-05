@@ -17,7 +17,7 @@ export class Router {
   ) {
     this.router = new Bun.FileSystemRouter({
       style: "nextjs",
-      dir: this.options.dir || "./api",
+      dir: this.options.dir ?? "./api",
       fileExtensions: [".ts", ".js"],
     });
   }
@@ -65,13 +65,15 @@ export class Router {
 
           const res = await runner.exec(handler, context);
 
+          if (!res) return notFound;
+
           res.headers.set("Access-Control-Allow-Origin", "*");
           res.headers.set(
             "Access-Control-Allow-Methods",
             "GET, POST, PUT, DELETE, OPTIONS"
           );
 
-          return res || notFound;
+          return res;
         } catch (error) {
           console.error("Error during request handling:", error);
           return new Response("Internal Server Error", { status: 500 });

@@ -5,7 +5,7 @@ import { Console } from "@/utils";
 
 const { STEAM_API_KEY } = Bun.env;
 
-export const console = new Console({
+const console = new Console({
   prefix: "[Steam Achievements] ",
 });
 

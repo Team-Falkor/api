@@ -5,10 +5,11 @@ import { Console } from "./utils";
 export const console = new Console();
 
 const PORT = process.env.PORT || 3000;
-const routers = join(__dirname, "routes");
-const cachePath = join(__dirname, "..", "cache.json");
+const DBName = process.env.DBName ?? "db.sqlite";
+export const routers = join(__dirname, "routes");
+export const dbPath = join(__dirname, "..",  DBName);
 
-export const cache = new Cache(cachePath);
+export const cache = new Cache(dbPath);
 cache.startTimer();
 
 new Router({
