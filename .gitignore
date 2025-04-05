@@ -130,3 +130,6 @@ dist
 .pnp.*
 
 cache.json
+*.sqlite
+**.sqlite
+db.sqlite
