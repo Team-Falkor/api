@@ -9,6 +9,8 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
   .use(
     rateLimitPlugin({
       max: 100,
+      windowMs: 1000 * 60 * 15, // 15 minutes
+      message: "Too many requests, please try again later.",
     })
   )
   .post("/login", login, { body: loginBodySchema })
