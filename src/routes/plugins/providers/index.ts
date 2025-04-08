@@ -84,4 +84,31 @@ export const providersRoute = new Elysia({ prefix: "/providers" })
       ),
     }
   )
+  .put(
+    "/",
+    async ({ body, set, error }) => {
+      const { setupUrl, setupJSON } = body;
+
+      try {
+        const created = await provider.createProvider(setupUrl, setupJSON);
+
+        return created;
+      } catch (e) {
+        console.error(e);
+        return error(
+          500,
+          createResponse({
+            success: false,
+            message: "Internal Server Error",
+          })
+        );
+      }
+    },
+    {
+      body: t.Object({
+        setupUrl: t.String(),
+        setupJSON: t.Unknown(),
+      }),
+    }
+  )
   .use(providerAdminRoutes);
