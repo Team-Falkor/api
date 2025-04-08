@@ -1,0 +1,24 @@
+{
+  "name": "api-elysia",
+  "version": "1.0.50",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "db:pull": "prisma db pull",
+    "db:push": "prisma db push"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.2.0",
+    "@elysiajs/jwt": "^1.2.0",
+    "@prisma/client": "^6.5.0",
+    "elysia": "latest",
+    "elysia-rate-limit": "^4.3.0",
+    "ms": "^2.1.3"
+  },
+  "devDependencies": {
+    "@types/ms": "^2.1.0",
+    "bun-types": "latest",
+    "prisma": "^6.5.0"
+  },
+  "module": "src/index.js"
+}
