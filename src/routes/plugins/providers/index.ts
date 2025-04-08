@@ -1,5 +1,8 @@
 import Elysia, { t } from "elysia";
-import { ProviderHandler } from "../../../handlers/providers";
+import {
+  ProviderHandler,
+  ProviderValidationError,
+} from "../../../handlers/providers";
 import { Console } from "../../../utils/console";
 import { cachePlugin, rateLimitPlugin } from "../../../utils/plugins";
 import { prisma } from "../../../utils/prisma";
@@ -94,7 +97,42 @@ export const providersRoute = new Elysia({ prefix: "/providers" })
 
         return created;
       } catch (e) {
-        console.error(e);
+        // Enhanced error logging with context and structured information
+        const errorContext = {
+          endpoint: "PUT /providers",
+          requestData: {
+            setupUrl,
+            setupJSON:
+              typeof setupJSON === "object"
+                ? "(JSON Object)"
+                : typeof setupJSON,
+          },
+          errorType:
+            e instanceof ProviderValidationError
+              ? "ValidationError"
+              : "UnexpectedError",
+          errorName: e instanceof Error ? e.name : "Unknown",
+          timestamp: new Date().toISOString(),
+        };
+
+        console.error(
+          "Provider creation failed:",
+          errorContext,
+          "\nError details:",
+          e instanceof Error ? { message: e.message, stack: e.stack } : e
+        );
+
+        // Return appropriate error response based on error type
+        if (e instanceof ProviderValidationError) {
+          return error(
+            400,
+            createResponse({
+              success: false,
+              message: `Validation error: ${e.message}`,
+            })
+          );
+        }
+
         return error(
           500,
           createResponse({
