@@ -5,6 +5,18 @@ export type RateLimitStore = Map<
   { count: number; lastRequest: number }
 >;
 
+export type RateLimitAlgorithm =
+  | "sliding-window"
+  | "fixed-window"
+  | "token-bucket";
+
+export interface RateLimitTier {
+  path: string;
+  windowMs?: number;
+  max?: number;
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "ALL";
+}
+
 export interface RateLimitOptions {
   /** Scope */
   scope?: LifeCycleType;
@@ -27,9 +39,9 @@ export interface RateLimitOptions {
   /** Headers to include in the response */
   headers?: boolean;
   /** Tiered rate limits for different paths */
-  tiers?: Array<{
-    path: string;
-    windowMs?: number;
-    max?: number;
-  }>;
+  tiers?: Array<RateLimitTier>;
+  /** Which algorithm to use for rate limiting */
+  algorithm?: RateLimitAlgorithm;
+  /** Debug mode: disables/ enables the rate limit for testing */
+  debug?: boolean;
 }
