@@ -10,12 +10,14 @@ const console = new Console({
 });
 
 /**
- * Plugin that checks if the authenticated user has admin privileges
- * This plugin builds on top of the authPlugin and should be used after it
+ * Elysia plugin to require admin privileges for a route.
+ * Should be used after the authPlugin.
+ * Adds `isAdmin` to context if user is admin.
  */
 const requireAdminPlugin = (app: Elysia) =>
   app.use(authPlugin).derive(({ user, error }) => {
     if (!user) {
+      console.warn("User not authenticated in requireAdminPlugin");
       return error(
         401,
         createResponse({
@@ -27,6 +29,7 @@ const requireAdminPlugin = (app: Elysia) =>
     }
 
     if (user.role !== Role.ADMIN) {
+      console.warn(`User ${user.id} does not have admin privileges`);
       return error(
         403,
         createResponse({
@@ -39,6 +42,7 @@ const requireAdminPlugin = (app: Elysia) =>
 
     return {
       isAdmin: true,
+      role: user.role,
     };
   });
 

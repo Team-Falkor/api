@@ -8,6 +8,8 @@ export type CacheOptions = {
   namespace?: string; // Namespace for cache keys to avoid collisions
   maxSize?: number; // Maximum number of items in cache
   logLevel?: "none" | "error" | "warn" | "info" | "debug";
+  persistencePath?: string;
+  persistence?: boolean;
 };
 
 export interface Cache<CacheMap extends Record<string, unknown>> {

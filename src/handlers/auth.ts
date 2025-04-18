@@ -23,6 +23,7 @@ export async function login({
       id: true,
       email: true,
       password: true,
+      role: true,
     },
   });
 

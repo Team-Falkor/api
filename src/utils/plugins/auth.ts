@@ -9,34 +9,32 @@ const console = new Console({
   useTimestamp: false,
 });
 
-// Define a strong default secret for development only
 const DEFAULT_JWT_SECRET = "your-secret-key";
 const JWT_SECRET = Bun.env.JWT_SECRET ?? DEFAULT_JWT_SECRET;
 
-// Check if we're using the default secret and throw an error in production
-if (JWT_SECRET === DEFAULT_JWT_SECRET) {
+if (
+  JWT_SECRET === DEFAULT_JWT_SECRET ||
+  !JWT_SECRET ||
+  JWT_SECRET.length < 32
+) {
   if (Bun.env.NODE_ENV === "production") {
-    throw new Error("JWT_SECRET must be set in production environment");
+    throw new Error(
+      "A strong JWT_SECRET (min 32 chars, not default) must be set in production environment"
+    );
   } else {
     console.warn(
       console.styleText(
-        "JWT_SECRET should not be equal to default value in production, please set it in .env file",
+        "JWT_SECRET should be at least 32 characters and not default in production. Set it in .env file.",
         ["bold", "yellow"]
       )
     );
   }
 }
 
-// Validate that the JWT secret is strong enough
-if (JWT_SECRET.length < 32) {
-  console.warn(
-    console.styleText(
-      "JWT_SECRET should be at least 32 characters long for security",
-      ["bold", "yellow"]
-    )
-  );
-}
-
+/**
+ * Elysia authentication plugin using JWT and Prisma
+ * Adds `user` to context if authenticated
+ */
 const authPlugin = (app: Elysia) =>
   app
     .use(
@@ -46,49 +44,66 @@ const authPlugin = (app: Elysia) =>
       })
     )
     .derive(async ({ jwt, error, cookie: { accessToken }, set }) => {
-      if (!accessToken.value) {
+      if (!accessToken?.value) {
         return error(
           401,
           createResponse({
-            message: "Access token is missing",
+            message: "Unauthorized",
             success: false,
             error: true,
           })
         );
       }
-      const jwtPayload = await jwt.verify(accessToken.value);
-      if (!jwtPayload) {
+      let jwtPayload;
+      try {
+        jwtPayload = await jwt.verify(accessToken.value);
+      } catch {
         return error(
           403,
           createResponse({
-            message: "Access token is invalid",
+            message: "Forbidden",
             success: false,
             error: true,
           })
         );
       }
-
+      if (!jwtPayload || typeof jwtPayload !== "object" || !jwtPayload.sub) {
+        return error(
+          403,
+          createResponse({
+            message: "Forbidden",
+            success: false,
+            error: true,
+          })
+        );
+      }
       const userId = jwtPayload.sub;
-      const user = await prisma.user.findUnique({
-        where: {
-          id: userId,
-        },
-      });
-
-      if (!user) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, email: true, isOnline: true, role: true },
+        });
+        if (!user) {
+          return error(
+            403,
+            createResponse({
+              message: "Forbidden",
+              success: false,
+              error: true,
+            })
+          );
+        }
+        return { user };
+      } catch {
         return error(
-          403,
+          500,
           createResponse({
-            message: "User not found",
+            message: "Internal server error",
             success: false,
             error: true,
           })
         );
       }
-
-      return {
-        user,
-      };
     });
 
 export { authPlugin };
