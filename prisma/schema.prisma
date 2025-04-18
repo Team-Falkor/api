@@ -68,5 +68,12 @@ model Provider {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  approved Boolean @default(false)
+  failureCount Int     @default(0)
+  approved     Boolean @default(false)
+}
+
+model HealthCheckState {
+  id                      Int      @id @default(1)
+  lastCheckCompletionTime DateTime
+  wasLastCheckSuccessful  Boolean
 }

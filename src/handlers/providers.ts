@@ -1,6 +1,6 @@
 import { Provider } from "@prisma/client";
-import { prisma } from "../utils/prisma";
 import { PluginSetupJSON } from "@team-falkor/shared-types";
+import { prisma } from "../utils/prisma";
 
 /**
  * Error class for provider validation errors
