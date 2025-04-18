@@ -2,7 +2,7 @@ import Elysia from "elysia";
 import ms from "ms";
 import { RateLimitOptions, RateLimitStore } from "../../../@types/plugins";
 import { Console } from "../../console";
-import { createResponse } from "../../response";
+import { createApiResponse } from "../../response";
 
 const console = new Console({ prefix: "[Rate Limit]:" });
 
@@ -258,7 +258,7 @@ export const rateLimitPlugin = (userOptions: RateLimitOptions = {}) => {
       set.status = options.statusCode!;
       return error(
         options.statusCode!,
-        createResponse({
+        createApiResponse({
           message: options.message!,
           success: false,
           error: true,

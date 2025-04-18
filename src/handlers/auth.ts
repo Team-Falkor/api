@@ -7,7 +7,7 @@ import {
 } from "../@types";
 import { ACCESS_TOKEN_EXP, REFRESH_TOKEN_EXP } from "../utils/constants";
 import { prisma } from "../utils/prisma";
-import { createResponse } from "../utils/response";
+import { createApiResponse } from "../utils/response";
 import { getExpTimestamp } from "../utils/utils";
 
 export async function login({
@@ -24,7 +24,7 @@ export async function login({
   if (!user || !(await bcrypt.compare(body.password, user.password))) {
     return error(
       401,
-      createResponse({
+      createApiResponse({
         message: "Invalid email or password",
         success: false,
         error: true,
@@ -78,7 +78,7 @@ export async function login({
     },
   });
 
-  return createResponse({
+  return createApiResponse({
     success: true,
     message: "Signed in successfully",
     data: {
@@ -107,7 +107,7 @@ export async function register({ body, set }: RegisterContext) {
     },
   });
 
-  return createResponse({
+  return createApiResponse({
     success: true,
     message: "Account created successfully",
     data: { user: newUser },
@@ -123,7 +123,7 @@ export async function refresh({
   if (!refreshToken.value) {
     return error(
       401,
-      createResponse({
+      createApiResponse({
         message: "Missing refresh token",
         success: false,
         error: true,
@@ -134,7 +134,7 @@ export async function refresh({
   if (!payload || typeof payload.sub !== "string") {
     return error(
       403,
-      createResponse({
+      createApiResponse({
         message: "Invalid or expired refresh token",
         success: false,
         error: true,
@@ -149,7 +149,7 @@ export async function refresh({
   if (!user || user.refreshToken !== refreshToken.value) {
     return error(
       403,
-      createResponse({
+      createApiResponse({
         message: "Refresh token not recognized",
         success: false,
         error: true,
@@ -193,7 +193,7 @@ export async function refresh({
     },
   });
 
-  return createResponse({
+  return createApiResponse({
     success: true,
     message: "Token refreshed",
     data: {
@@ -218,14 +218,14 @@ export async function logout({
     },
   });
 
-  return createResponse({
+  return createApiResponse({
     success: true,
     message: "Logged out successfully",
   });
 }
 
 export async function me({ user }: LogoutContext) {
-  return createResponse({
+  return createApiResponse({
     success: true,
     message: "User profile fetched",
     data: {

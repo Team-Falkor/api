@@ -2,7 +2,7 @@ import jwt from "@elysiajs/jwt";
 import Elysia from "elysia";
 import { Console } from "../console";
 import { prisma } from "../prisma";
-import { createResponse } from "../response";
+import { createApiResponse } from "../response";
 
 const console = new Console({
   prefix: "[AUTH PLUGIN]: ",
@@ -43,7 +43,7 @@ const authPlugin = (app: Elysia) =>
       if (!accessToken?.value) {
         return error(
           401,
-          createResponse({
+          createApiResponse({
             message: "Unauthorized",
             success: false,
             error: true,
@@ -57,7 +57,7 @@ const authPlugin = (app: Elysia) =>
       } catch {
         return error(
           403,
-          createResponse({
+          createApiResponse({
             message: "Invalid or expired access token",
             success: false,
             error: true,
@@ -68,7 +68,7 @@ const authPlugin = (app: Elysia) =>
       if (!jwtPayload || typeof jwtPayload !== "object" || !jwtPayload.sub) {
         return error(
           403,
-          createResponse({
+          createApiResponse({
             message: "Malformed JWT payload",
             success: false,
             error: true,
@@ -90,7 +90,7 @@ const authPlugin = (app: Elysia) =>
       if (!user) {
         return error(
           403,
-          createResponse({
+          createApiResponse({
             message: "User not found",
             success: false,
             error: true,

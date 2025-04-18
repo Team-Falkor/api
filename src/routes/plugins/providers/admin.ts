@@ -1,7 +1,7 @@
 import Elysia, { t } from "elysia";
 import { ProviderHandler } from "../../../handlers/providers";
 import { requireAdminPlugin } from "../../../utils/plugins";
-import { createResponse } from "../../../utils/response";
+import { createApiResponse } from "../../../utils/response";
 
 const provider = new ProviderHandler();
 
@@ -22,7 +22,7 @@ export const providerAdminRoutes = new Elysia({ prefix: "/admin" })
         });
 
         set.status = 200;
-        return createResponse({
+        return createApiResponse({
           success: true,
           message: "Pending providers retrieved successfully",
           data: pendingProviders,
@@ -34,7 +34,7 @@ export const providerAdminRoutes = new Elysia({ prefix: "/admin" })
         );
         return error(
           500,
-          createResponse({
+          createApiResponse({
             success: false,
             message: "Failed to retrieve pending providers",
             error: true,
@@ -66,7 +66,7 @@ export const providerAdminRoutes = new Elysia({ prefix: "/admin" })
         if (!existingProvider) {
           return error(
             404,
-            createResponse({
+            createApiResponse({
               success: false,
               message: `Provider with ID ${id} not found`,
               error: true,
@@ -78,7 +78,7 @@ export const providerAdminRoutes = new Elysia({ prefix: "/admin" })
         const deletedProvider = await provider.deleteProvider(id);
 
         set.status = 200;
-        return createResponse({
+        return createApiResponse({
           success: true,
           message: "Provider deleted successfully",
           data: deletedProvider,
@@ -90,7 +90,7 @@ export const providerAdminRoutes = new Elysia({ prefix: "/admin" })
         );
         return error(
           500,
-          createResponse({
+          createApiResponse({
             success: false,
             message: "Failed to delete provider",
             error: true,
@@ -114,7 +114,7 @@ export const providerAdminRoutes = new Elysia({ prefix: "/admin" })
         const approvedProvider = await provider.approveProvider(id);
 
         set.status = 200;
-        return createResponse({
+        return createApiResponse({
           success: true,
           message: "Provider approved successfully",
           data: approvedProvider,
@@ -124,7 +124,7 @@ export const providerAdminRoutes = new Elysia({ prefix: "/admin" })
         if (e instanceof Error && e.message.includes("not found")) {
           return error(
             404,
-            createResponse({
+            createApiResponse({
               success: false,
               message: e.message,
               error: true,
@@ -138,7 +138,7 @@ export const providerAdminRoutes = new Elysia({ prefix: "/admin" })
         );
         return error(
           500,
-          createResponse({
+          createApiResponse({
             success: false,
             message: "Failed to approve provider",
             error: true,

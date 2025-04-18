@@ -1,3 +1,4 @@
+import { Provider } from "@prisma/client";
 import Elysia, { t } from "elysia";
 import {
   ProviderHandler,
@@ -6,143 +7,189 @@ import {
 import { Console } from "../../../utils/console";
 import { cachePlugin } from "../../../utils/plugins";
 import { prisma } from "../../../utils/prisma";
-import { createResponse } from "../../../utils/response";
+import { createApiResponse } from "../../../utils/response";
 import { providerAdminRoutes } from "./admin";
 
 export const console = new Console();
 const provider = new ProviderHandler();
 
 export const providersRoute = new Elysia({ prefix: "/providers" })
-
   .use(
     cachePlugin({
       persistence: true,
       namespace: "providers",
       maxSize: 100,
-      ttl: 60 * 60 * 24, // 1 day
+      ttl: 60 * 60 * 24,
       logLevel: "info",
     })
   )
   .get(
     "/",
     async ({ query, set, cache }) => {
-      const { limit, offset, search } = query;
+      const { limit = 10, offset = 0, search = "" } = query;
 
-      // Check if the data is in the cache
       const cacheKey = `providers:${limit}:${offset}:${search}`;
       const cachedData = cache.get(cacheKey);
 
-      // If the data is in the cache, return it
       if (cachedData) {
+        console.info(`Cache hit for ${cacheKey}`);
         set.status = 200;
-        return createResponse({
+        return createApiResponse({
           success: true,
-          data: cachedData,
+          data: cachedData as Provider[],
         });
       }
 
-      // Get the data from the database
-      const data = await prisma.provider.findMany({
-        where: {
-          name: {
-            contains: search,
+      console.info(`Cache miss for ${cacheKey}`);
+
+      try {
+        const data = await prisma.provider.findMany({
+          where: {
+            name: {
+              contains: search, // Assuming case-sensitive search by default in SQLite
+            },
+            approved: true,
           },
-          approved: true,
-        },
-        take: limit,
-        skip: offset,
-        omit: {
-          failureCount: true,
-        },
-      });
+          take: limit,
+          skip: offset,
+          select: {
+            id: true,
+            setupUrl: true,
+            setupJSON: true,
+            name: true,
+            official: true,
+            createdAt: true,
+            updatedAt: true,
+            failureCount: true,
+            approved: true,
+          },
+          orderBy: {
+            name: "asc",
+          },
+        });
 
-      // if data is empty return 404
-      if (!data) {
-        set.status = 404;
-        return createResponse({
+        if (data.length === 0) {
+          set.status = 404;
+          return createApiResponse({
+            success: false,
+            message: "No approved providers found matching the criteria.",
+          });
+        }
+
+        cache.set(cacheKey, data);
+
+        set.status = 200;
+        return createApiResponse({
+          success: true,
+          data,
+        });
+      } catch (dbError) {
+        console.error("Database error fetching providers:", dbError);
+        set.status = 500;
+        return createApiResponse({
           success: false,
-          message: "No providers found",
+          message: "Failed to fetch providers due to a server error.",
         });
       }
-
-      // Cache the data
-      cache.set(cacheKey, data);
-
-      set.status = 200;
-      return createResponse({
-        success: true,
-        data,
-      });
     },
     {
       query: t.Optional(
         t.Object({
-          limit: t.Optional(t.Number()),
-          offset: t.Optional(t.Number()),
-          search: t.Optional(t.String()),
+          limit: t.Optional(t.Numeric({ minimum: 1, default: 10 })),
+          offset: t.Optional(t.Numeric({ minimum: 0, default: 0 })),
+          search: t.Optional(t.String({ default: "" })),
         })
       ),
     }
   )
   .put(
     "/",
-    async ({ body, set, error }) => {
+    async ({ body, set }) => {
       const { setupUrl, setupJSON } = body;
 
       try {
-        const created = await provider.createProvider(setupUrl, setupJSON);
+        const newProvider = await provider.createProvider(setupUrl, setupJSON);
 
-        return created;
+        set.status = 201;
+        return createApiResponse({
+          success: true,
+          message: "Provider submitted successfully. It needs approval.",
+          data: {
+            id: newProvider.id,
+            name: newProvider.name,
+            setupUrl: newProvider.setupUrl,
+            official: newProvider.official,
+            approved: newProvider.approved,
+          },
+        });
       } catch (e) {
-        // Enhanced error logging with context and structured information
         const errorContext = {
           endpoint: "PUT /providers",
           requestData: {
             setupUrl,
             setupJSON:
               typeof setupJSON === "object"
-                ? "(JSON Object)"
+                ? "(JSON Object provided)"
                 : typeof setupJSON,
           },
           errorType:
             e instanceof ProviderValidationError
               ? "ValidationError"
               : "UnexpectedError",
-          errorName: e instanceof Error ? e.name : "Unknown",
+          errorName: e instanceof Error ? e.name : "UnknownError",
+          errorMessage: e instanceof Error ? e.message : String(e),
           timestamp: new Date().toISOString(),
         };
 
         console.error(
           "Provider creation failed:",
           errorContext,
-          "\nError details:",
-          e instanceof Error ? { message: e.message, stack: e.stack } : e
+          !(e instanceof ProviderValidationError) && e instanceof Error
+            ? `\nStack: ${e.stack}`
+            : ""
         );
 
-        // Return appropriate error response based on error type
         if (e instanceof ProviderValidationError) {
-          return error(
-            400,
-            createResponse({
-              success: false,
-              message: `Validation error: ${e.message}`,
-            })
-          );
+          set.status = 400;
+          return createApiResponse({
+            success: false,
+            message: e.message,
+            error: {
+              message: e.message,
+              code: "VALIDATION_ERROR",
+            },
+          });
         }
 
-        return error(
-          500,
-          createResponse({
+        if (e instanceof Error && "code" in e && (e as any).code === "P2002") {
+          set.status = 409;
+          return createApiResponse({
             success: false,
-            message: "Internal Server Error",
-          })
-        );
+            message:
+              "A provider with similar unique details (e.g., setupUrl or name) might already exist.",
+            error: {
+              message: "Duplicate provider.",
+              code: "CONFLICT_ERROR",
+            },
+          });
+        }
+
+        set.status = 500;
+        return createApiResponse({
+          success: false,
+          message:
+            "An unexpected internal server error occurred while adding the provider.",
+          error: {
+            message: "Internal error",
+            code: "INTERNAL_SERVER_ERROR",
+          },
+        });
       }
     },
     {
       body: t.Object({
-        setupUrl: t.String(),
-        setupJSON: t.Unknown(),
+        setupUrl: t.String({ error: "setupUrl must be a valid string URL." }),
+        setupJSON: t.Unknown({ error: "setupJSON must be provided." }),
       }),
     }
   )

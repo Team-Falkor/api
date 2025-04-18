@@ -1,7 +1,7 @@
 import { Role } from "@prisma/client";
 import Elysia from "elysia";
 import { Console } from "../console";
-import { createResponse } from "../response";
+import { createApiResponse } from "../response";
 import { authPlugin } from "./auth";
 
 const console = new Console({
@@ -20,7 +20,7 @@ const requireAdminPlugin = (app: Elysia) =>
       console.warn("User not authenticated in requireAdminPlugin");
       return error(
         401,
-        createResponse({
+        createApiResponse({
           message: "Authentication required",
           success: false,
           error: true,
@@ -32,7 +32,7 @@ const requireAdminPlugin = (app: Elysia) =>
       console.warn(`User ${user.id} does not have admin privileges`);
       return error(
         403,
-        createResponse({
+        createApiResponse({
           message: "Admin privileges required",
           success: false,
           error: true,
