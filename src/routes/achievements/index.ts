@@ -1,5 +1,4 @@
 import Elysia, { t } from "elysia";
-import { rateLimitPlugin } from "../../utils/plugins";
 import { cachePlugin } from "../../utils/plugins/cache";
 import { steamAchievementsGETParams } from "./schema";
 import { IGetSchemaForGame } from "./types";
@@ -13,14 +12,6 @@ export const steamAchievementsRoutes = new Elysia({ prefix: "/achievements" })
       maxSize: 100,
       ttl: 60 * 60 * 24,
       logLevel: "info",
-    })
-  )
-  .use(
-    rateLimitPlugin({
-      max: 100,
-      windowMs: 1000 * 60 * 60, // 1 hour
-      message: "Too many requests",
-      statusCode: 429,
     })
   )
   .get(

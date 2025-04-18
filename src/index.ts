@@ -1,24 +1,27 @@
 import { cors } from "@elysiajs/cors";
-import { Server } from "bun";
 import { Elysia } from "elysia";
 import { steamAchievementsRoutes } from "./routes/achievements";
 import { authRoutes } from "./routes/auth";
 import { providersRoute } from "./routes/plugins/providers";
 import { startProviderCheckScheduler } from "./utils/helpers/plugins/providers/check-providers-interval";
-
-export let server: Server | null;
+import { rateLimitPlugin } from "./utils/plugins";
 
 export const app = new Elysia()
+  .use(
+    rateLimitPlugin({
+      windowMs: 60_000,
+      max: 15,
+      headers: true,
+      verbose: true,
+      skipPaths: ["/health", "/favicon.ico"],
+    })
+  )
   .use(cors())
-
   .get("/", () => ({ message: "Hello from falkor" }))
   .use(authRoutes)
   .use(steamAchievementsRoutes)
   .use(providersRoute)
-  .listen(3000, (server) => {
+  .listen(3000, (srv) => {
+    console.info(`🐲 falkor api is running at ${srv.hostname}:${srv.port}`);
     startProviderCheckScheduler();
-    console.info(
-      `🐲 falkor api is running at ${server?.hostname}:${server?.port}`
-    );
-    server = server;
   });

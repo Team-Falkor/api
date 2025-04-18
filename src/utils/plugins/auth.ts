@@ -24,17 +24,13 @@ if (
   } else {
     console.warn(
       console.styleText(
-        "JWT_SECRET should be at least 32 characters and not default in production. Set it in .env file.",
+        "⚠️  JWT_SECRET should be at least 32 characters and not default in production. Set it in your .env.",
         ["bold", "yellow"]
       )
     );
   }
 }
 
-/**
- * Elysia authentication plugin using JWT and Prisma
- * Adds `user` to context if authenticated
- */
 const authPlugin = (app: Elysia) =>
   app
     .use(
@@ -54,6 +50,7 @@ const authPlugin = (app: Elysia) =>
           })
         );
       }
+
       let jwtPayload;
       try {
         jwtPayload = await jwt.verify(accessToken.value);
@@ -61,49 +58,47 @@ const authPlugin = (app: Elysia) =>
         return error(
           403,
           createResponse({
-            message: "Forbidden",
+            message: "Invalid or expired access token",
             success: false,
             error: true,
           })
         );
       }
+
       if (!jwtPayload || typeof jwtPayload !== "object" || !jwtPayload.sub) {
         return error(
           403,
           createResponse({
-            message: "Forbidden",
+            message: "Malformed JWT payload",
             success: false,
             error: true,
           })
         );
       }
-      const userId = jwtPayload.sub;
-      try {
-        const user = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { id: true, email: true, isOnline: true, role: true },
-        });
-        if (!user) {
-          return error(
-            403,
-            createResponse({
-              message: "Forbidden",
-              success: false,
-              error: true,
-            })
-          );
-        }
-        return { user };
-      } catch {
+
+      const user = await prisma.user.findUnique({
+        where: { id: jwtPayload.sub },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          isOnline: true,
+          role: true,
+        },
+      });
+
+      if (!user) {
         return error(
-          500,
+          403,
           createResponse({
-            message: "Internal server error",
+            message: "User not found",
             success: false,
             error: true,
           })
         );
       }
+
+      return { user };
     });
 
 export { authPlugin };

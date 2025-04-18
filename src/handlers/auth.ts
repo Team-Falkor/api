@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import {
   AuthContext,
   LogoutContext,
@@ -16,72 +17,49 @@ export async function login({
   set,
   error,
 }: AuthContext) {
-  // Find the user by email
   const user = await prisma.user.findUnique({
     where: { email: body.email },
-    select: {
-      id: true,
-      email: true,
-      password: true,
-      role: true,
-    },
   });
 
-  if (!user) {
-    set.status = "Bad Request";
+  if (!user || !(await bcrypt.compare(body.password, user.password))) {
     return error(
-      404,
+      401,
       createResponse({
-        message: "The email address or password you entered is incorrect",
+        message: "Invalid email or password",
         success: false,
         error: true,
       })
     );
   }
 
-  // Verify password using Bun.password.verify
-  const matchPassword = await Bun.password.verify(
-    body.password,
-    user.password,
-    "bcrypt"
-  );
-  if (!matchPassword) {
-    set.status = "Bad Request";
-    return error(
-      404,
-      createResponse({
-        message: "The email address or password you entered is incorrect",
-        success: false,
-        error: true,
-      })
-    );
-  }
-
-  // Create access token
   const accessJWTToken = await jwt.sign({
     sub: user.id,
     exp: getExpTimestamp(ACCESS_TOKEN_EXP),
   });
+
+  const refreshJWTToken = await jwt.sign({
+    sub: user.id,
+    exp: getExpTimestamp(REFRESH_TOKEN_EXP),
+  });
+
   accessToken.set({
     value: accessJWTToken,
     httpOnly: true,
     maxAge: ACCESS_TOKEN_EXP,
     path: "/",
+    sameSite: "lax",
+    secure: true,
   });
 
-  // Create refresh token
-  const refreshJWTToken = await jwt.sign({
-    sub: user.id,
-    exp: getExpTimestamp(REFRESH_TOKEN_EXP),
-  });
   refreshToken.set({
     value: refreshJWTToken,
     httpOnly: true,
     maxAge: REFRESH_TOKEN_EXP,
     path: "/",
+    sameSite: "lax",
+    secure: true,
   });
 
-  // Update user online status and store the refresh token in the database
   const updatedUser = await prisma.user.update({
     where: { id: user.id },
     data: {
@@ -89,18 +67,20 @@ export async function login({
       refreshToken: refreshJWTToken,
       lastLogin: new Date(),
     },
-    omit: {
-      password: true,
-      refreshToken: true,
-      verificationToken: true,
-      resetTokenExpiry: true,
-      resetToken: true,
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      role: true,
+      isOnline: true,
+      lastLogin: true,
+      createdAt: true,
     },
   });
 
   return createResponse({
     success: true,
-    message: "Sign-in successfully",
+    message: "Signed in successfully",
     data: {
       user: updatedUser,
       accessToken: accessJWTToken,
@@ -109,40 +89,31 @@ export async function login({
   });
 }
 
-/**
- * Handler for POST /auth/sign-up
- */
 export async function register({ body, set }: RegisterContext) {
-  // Hash password using Bun.password.hash (or replace with your own implementation)
-  const password = await Bun.password.hash(body.password, {
-    algorithm: "bcrypt",
-    cost: 10,
-  });
+  const hashedPassword = await bcrypt.hash(body.password, 10);
 
-  const user = await prisma.user.create({
+  const newUser = await prisma.user.create({
     data: {
-      ...body,
-      password,
+      email: body.email,
+      username: body.username,
+      password: hashedPassword,
     },
-    omit: {
-      password: true,
-      refreshToken: true,
-      verificationToken: true,
-      resetTokenExpiry: true,
-      resetToken: true,
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      role: true,
+      createdAt: true,
     },
   });
 
   return createResponse({
     success: true,
     message: "Account created successfully",
-    data: { user },
+    data: { user: newUser },
   });
 }
 
-/**
- * Handler for POST /auth/refresh
- */
 export async function refresh({
   cookie: { accessToken, refreshToken },
   jwt,
@@ -150,100 +121,95 @@ export async function refresh({
   error,
 }: RefreshContext) {
   if (!refreshToken.value) {
-    set.status = "Unauthorized";
     return error(
-      501,
+      401,
       createResponse({
-        message: "Refresh token is missing",
+        message: "Missing refresh token",
         success: false,
         error: true,
       })
     );
   }
-
-  // Verify refresh token
-  const jwtPayload = await jwt.verify(refreshToken.value);
-  if (!jwtPayload) {
-    set.status = "Forbidden";
-
-    return error(
-      501,
-      createResponse({
-        message: "Refresh token is invalid",
-        success: false,
-        error: true,
-      })
-    );
-  }
-
-  // Verify user exists
-  const userId = jwtPayload.sub;
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) {
-    set.status = "Forbidden";
-
+  const payload = await jwt.verify(refreshToken.value);
+  if (!payload || typeof payload.sub !== "string") {
     return error(
       403,
       createResponse({
-        message: "User not found",
+        message: "Invalid or expired refresh token",
         success: false,
         error: true,
       })
     );
   }
 
-  // Generate new access token
-  const accessJWTToken = await jwt.sign({
+  const user = await prisma.user.findUnique({
+    where: { id: payload.sub },
+  });
+
+  if (!user || user.refreshToken !== refreshToken.value) {
+    return error(
+      403,
+      createResponse({
+        message: "Refresh token not recognized",
+        success: false,
+        error: true,
+      })
+    );
+  }
+
+  const newAccessToken = await jwt.sign({
     sub: user.id,
     exp: getExpTimestamp(ACCESS_TOKEN_EXP),
   });
-  accessToken.set({
-    value: accessJWTToken,
-    httpOnly: true,
-    maxAge: ACCESS_TOKEN_EXP,
-    path: "/",
-  });
 
-  // Generate new refresh token
-  const refreshJWTToken = await jwt.sign({
+  const newRefreshToken = await jwt.sign({
     sub: user.id,
     exp: getExpTimestamp(REFRESH_TOKEN_EXP),
   });
+
+  accessToken.set({
+    value: newAccessToken,
+    httpOnly: true,
+    maxAge: ACCESS_TOKEN_EXP,
+    path: "/",
+    sameSite: "lax",
+    secure: true,
+  });
+
   refreshToken.set({
-    value: refreshJWTToken,
+    value: newRefreshToken,
     httpOnly: true,
     maxAge: REFRESH_TOKEN_EXP,
     path: "/",
+    sameSite: "lax",
+    secure: true,
   });
 
-  // Update refresh token in database
   await prisma.user.update({
     where: { id: user.id },
-    data: { refreshToken: refreshJWTToken, lastLogin: new Date() },
+    data: {
+      refreshToken: newRefreshToken,
+      lastLogin: new Date(),
+    },
   });
 
   return createResponse({
     success: true,
-    message: "Refresh token generated successfully",
+    message: "Token refreshed",
     data: {
-      accessToken: accessJWTToken,
-      refreshToken: refreshJWTToken,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
     },
   });
 }
 
-/**
- * Handler for POST /auth/logout
- */
 export async function logout({
   cookie: { accessToken, refreshToken },
   user,
 }: LogoutContext) {
-  // Remove cookies
   accessToken.remove();
   refreshToken.remove();
 
-  // Update user status and remove stored refresh token
   await prisma.user.update({
     where: { id: user.id },
     data: {
@@ -254,18 +220,14 @@ export async function logout({
 
   return createResponse({
     success: true,
-    message: "Logout successfully",
-    data: null,
+    message: "Logged out successfully",
   });
 }
 
-/**
- * Handler for GET /auth/me
- */
 export async function me({ user }: LogoutContext) {
   return createResponse({
     success: true,
-    message: "Get user successfully",
+    message: "User profile fetched",
     data: {
       user: {
         ...user,

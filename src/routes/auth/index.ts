@@ -2,17 +2,9 @@ import { Elysia } from "elysia";
 import { login, logout, me, refresh, register } from "../../handlers/auth";
 import { authPlugin } from "../../utils/plugins/auth";
 
-import { rateLimitPlugin } from "../../utils/plugins/rate-limit";
 import { loginBodySchema, signupBodySchema } from "./schema";
 
 export const authRoutes = new Elysia({ prefix: "/auth" })
-  .use(
-    rateLimitPlugin({
-      max: 100,
-      windowMs: 1000 * 60 * 15, // 15 minutes
-      message: "Too many requests, please try again later.",
-    })
-  )
   .post("/login", login, { body: loginBodySchema })
   .post("/sign-up", register, {
     body: signupBodySchema,

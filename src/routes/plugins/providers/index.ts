@@ -4,7 +4,7 @@ import {
   ProviderValidationError,
 } from "../../../handlers/providers";
 import { Console } from "../../../utils/console";
-import { cachePlugin, rateLimitPlugin } from "../../../utils/plugins";
+import { cachePlugin } from "../../../utils/plugins";
 import { prisma } from "../../../utils/prisma";
 import { createResponse } from "../../../utils/response";
 import { providerAdminRoutes } from "./admin";
@@ -13,14 +13,7 @@ export const console = new Console();
 const provider = new ProviderHandler();
 
 export const providersRoute = new Elysia({ prefix: "/providers" })
-  .use(
-    rateLimitPlugin({
-      max: 100,
-      windowMs: 1000 * 60 * 60, // 1 hour
-      message: "Too many requests",
-      statusCode: 429,
-    })
-  )
+
   .use(
     cachePlugin({
       persistence: true,
