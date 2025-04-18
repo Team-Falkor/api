@@ -23,6 +23,7 @@ export const providersRoute = new Elysia({ prefix: "/providers" })
   )
   .use(
     cachePlugin({
+      persistence: true,
       namespace: "providers",
       maxSize: 100,
       ttl: 60 * 60 * 24, // 1 day
@@ -57,6 +58,9 @@ export const providersRoute = new Elysia({ prefix: "/providers" })
         },
         take: limit,
         skip: offset,
+        omit: {
+          failureCount: true,
+        },
       });
 
       // if data is empty return 404
