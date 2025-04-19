@@ -150,7 +150,7 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
   )
 
   // TOTAL Page Views
-  .get("/pageviews", async ({ set, error }) => {
+  .get("/pageviews/total", async ({ set, error }) => {
     try {
       const lengrh = prisma.pageView.count();
 
@@ -174,7 +174,7 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
 
   // TOTAL Events
 
-  .get("/events", async ({ error, set }) => {
+  .get("/events/total", async ({ error, set }) => {
     try {
       const lengrh = prisma.eventLog.count();
 
