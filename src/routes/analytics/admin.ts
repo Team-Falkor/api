@@ -3,7 +3,11 @@ import { AnalyticsHandler } from "../../handlers/analytics";
 import { requireAdminPlugin } from "../../utils/plugins";
 import { prisma } from "../../utils/prisma";
 import { createApiResponse } from "../../utils/response";
-import { aggregateMetricsSchema, dataRetentionSchema } from "./schema";
+import {
+  aggregateMetricsSchema,
+  dataRetentionSchema,
+  timeRangeSchema,
+} from "./schema";
 
 const analytics = new AnalyticsHandler();
 
@@ -149,49 +153,68 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
     { body: aggregateMetricsSchema }
   )
 
-  // TOTAL Page Views
-  .get("/pageviews/total", async ({ set, error }) => {
-    try {
-      const data = await prisma.pageView.count();
+  // TOTAL Page Views with validated query params
+  .get(
+    "/pageviews/total",
+    async ({ query, set, error }) => {
+      try {
+        const whereClause =
+          query.from || query.to
+            ? {
+                timestamp: {
+                  ...(query.from && { gte: query.from }),
+                  ...(query.to && { lte: query.to }),
+                },
+              }
+            : {};
 
-      set.status = 200;
-      return createApiResponse({
-        success: true,
-        data,
-      });
-    } catch (e) {
-      console.error("Error fetching pageviews:", e);
+        const data = await prisma.pageView.count({ where: whereClause });
 
-      return error(
-        500,
-        createApiResponse({
-          success: false,
-          message: "Failed to fetch pageviews",
-        })
-      );
-    }
-  })
+        set.status = 200;
+        return createApiResponse({ success: true, data });
+      } catch (e) {
+        console.error("Error fetching pageviews:", e);
+        return error(
+          500,
+          createApiResponse({
+            success: false,
+            message: "Failed to fetch pageviews",
+          })
+        );
+      }
+    },
+    { query: timeRangeSchema }
+  )
 
-  // TOTAL Events
+  // TOTAL Events with validated query params
+  .get(
+    "/events/total",
+    async ({ query, set, error }) => {
+      try {
+        const whereClause =
+          query.from || query.to
+            ? {
+                timestamp: {
+                  ...(query.from && { gte: query.from }),
+                  ...(query.to && { lte: query.to }),
+                },
+              }
+            : {};
 
-  .get("/events/total", async ({ error, set }) => {
-    try {
-      const data = await prisma.eventLog.count();
+        const data = await prisma.eventLog.count({ where: whereClause });
 
-      set.status = 200;
-      return createApiResponse({
-        success: true,
-        data,
-      });
-    } catch (e) {
-      console.error("Error fetching events:", e);
-
-      return error(
-        500,
-        createApiResponse({
-          success: false,
-          message: "Failed to fetch events",
-        })
-      );
-    }
-  });
+        set.status = 200;
+        return createApiResponse({ success: true, data });
+      } catch (e) {
+        console.error("Error fetching events:", e);
+        return error(
+          500,
+          createApiResponse({
+            success: false,
+            message: "Failed to fetch events",
+          })
+        );
+      }
+    },
+    { query: timeRangeSchema }
+  );

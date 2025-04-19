@@ -50,3 +50,8 @@ export const eventSchema = t.Object({
   sessionId: sessionIdSchema,
   context: t.Optional(t.Any()),
 });
+
+export const timeRangeSchema = t.Object({
+  from: t.Optional(t.Date()),
+  to: t.Optional(t.Date()),
+});
