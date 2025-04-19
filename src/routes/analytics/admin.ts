@@ -1,15 +1,83 @@
-// src/routes/admin/analytics.ts
-
 import Elysia from "elysia";
 import { AnalyticsHandler } from "../../handlers/analytics";
 import { requireAdminPlugin } from "../../utils/plugins";
 import { createApiResponse } from "../../utils/response";
-import { dataRetentionSchema, aggregateMetricsSchema } from "./schema";
+import { aggregateMetricsSchema, dataRetentionSchema } from "./schema";
 
 const analytics = new AnalyticsHandler();
 
 export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
   .use(requireAdminPlugin)
+
+  // ─── List Data‑Retention Policies ───────────────────────────────────────────
+  .get("/retention", async ({ query, set }) => {
+    try {
+      const skip = Number(query.skip ?? 0);
+      const take = Number(query.take ?? 10);
+      const policies = await analytics.listDataRetention(skip, take);
+      set.status = 200;
+      return createApiResponse({
+        success: true,
+        data: policies,
+      });
+    } catch (e) {
+      console.error("Error fetching retention policies:", e);
+      set.status = 500;
+      return createApiResponse({
+        success: false,
+        message: "Failed to fetch retention policies",
+      });
+    }
+  })
+
+  // ─── Get Pageviews ──────────────────────────────────────────────────────────
+  .get("/pageviews", async ({ query, set }) => {
+    try {
+      const skip = Number(query.skip ?? 0);
+      const take = Number(query.take ?? 50);
+      const path = query.path as string | undefined;
+
+      const data = await analytics.getPageViews({ skip, take, path });
+      set.status = 200;
+      return createApiResponse({
+        success: true,
+        data,
+      });
+    } catch (e) {
+      console.error("Error fetching pageviews:", e);
+      set.status = 500;
+      return createApiResponse({
+        success: false,
+        message: "Failed to fetch pageviews",
+      });
+    }
+  })
+
+  // ─── Get Events ─────────────────────────────────────────────────────────────
+  .get("/events", async ({ query, set }) => {
+    try {
+      const skip = Number(query.skip ?? 0);
+      const take = Number(query.take ?? 50);
+      const eventType = query.eventType as string | undefined;
+      const path = query.path as string | undefined;
+
+      const data = await analytics.getEvents({ skip, take, eventType, path });
+      set.status = 200;
+      return createApiResponse({
+        success: true,
+        data,
+      });
+    } catch (e) {
+      console.error("Error fetching events:", e);
+      set.status = 500;
+      return createApiResponse({
+        success: false,
+        message: "Failed to fetch events",
+      });
+    }
+  })
+
+  // ─── Update a Data‑Retention Policy ────────────────────────────────────────
   .patch(
     "/retention",
     async ({ body, set }) => {
@@ -21,10 +89,7 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
           message: `Data retention policy updated for ${body.dataType}`,
         });
       } catch (e) {
-        console.error(
-          "Error updating retention policy:",
-          e instanceof Error ? e.message : String(e)
-        );
+        console.error("Error updating retention policy:", e);
         set.status = 500;
         return createApiResponse({
           success: false,
@@ -32,10 +97,35 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
         });
       }
     },
-    {
-      body: dataRetentionSchema,
-    }
+    { body: dataRetentionSchema }
   )
+
+  // ─── Fetch Aggregate Metrics ───────────────────────────────────────────────
+  .get("/metrics", async ({ query, set }) => {
+    try {
+      const { metricType, period, startTime, endTime } = query;
+      const metrics = await analytics.getAggregateMetrics({
+        metricType: metricType as string | undefined,
+        period: period as string | undefined,
+        startTime: startTime ? new Date(startTime as string) : undefined,
+        endTime: endTime ? new Date(endTime as string) : undefined,
+      });
+      set.status = 200;
+      return createApiResponse({
+        success: true,
+        data: metrics,
+      });
+    } catch (e) {
+      console.error("Error fetching aggregate metrics:", e);
+      set.status = 500;
+      return createApiResponse({
+        success: false,
+        message: "Failed to fetch aggregate metrics",
+      });
+    }
+  })
+
+  // ─── Create / Update Aggregate Metrics ────────────────────────────────────
   .post(
     "/metrics/aggregate",
     async ({ body, set }) => {
@@ -47,10 +137,7 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
           message: "Aggregate metrics updated successfully",
         });
       } catch (e) {
-        console.error(
-          "Error updating aggregate metrics:",
-          e instanceof Error ? e.message : String(e)
-        );
+        console.error("Error updating aggregate metrics:", e);
         set.status = 500;
         return createApiResponse({
           success: false,
@@ -58,7 +145,5 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
         });
       }
     },
-    {
-      body: aggregateMetricsSchema,
-    }
+    { body: aggregateMetricsSchema }
   );
