@@ -3,6 +3,7 @@ import ms from "ms";
 import { RateLimitOptions, RateLimitStore } from "../../../@types/plugins";
 import { Console } from "../../console";
 import { createApiResponse } from "../../response";
+import { buildSkipMatcher } from "./buildSkipMatcher";
 
 const console = new Console({ prefix: "[Rate Limit]:" });
 
@@ -101,13 +102,9 @@ export const rateLimitPlugin = (userOptions: RateLimitOptions = {}) => {
         return;
       }
 
-      if (
-        options.skipPaths?.some((p) =>
-          p.includes("*")
-            ? new RegExp("^" + p.replace(/\*/g, ".*") + "$").test(path)
-            : p === path
-        )
-      ) {
+      const shouldSkip = buildSkipMatcher(options.skipPaths);
+
+      if (shouldSkip(path)) {
         options.verbose &&
           console.debug(`Skipping rate-limit for path: ${path}`);
         return;

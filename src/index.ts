@@ -14,7 +14,13 @@ export const app = new Elysia()
       max: 15,
       headers: true,
       verbose: true,
-      skipPaths: ["/health", "/favicon.ico"],
+      skipPaths: [
+        "/health/?",
+        "/favicon.ico",
+        "/auth/*",
+        "/admin/*",
+        "*/admin/*",
+      ],
     })
   )
   .use(cors())
