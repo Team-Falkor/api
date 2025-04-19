@@ -152,12 +152,12 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
   // TOTAL Page Views
   .get("/pageviews/total", async ({ set, error }) => {
     try {
-      const lengrh = prisma.pageView.count();
+      const data = await prisma.pageView.count();
 
       set.status = 200;
       return createApiResponse({
         success: true,
-        data: lengrh,
+        data,
       });
     } catch (e) {
       console.error("Error fetching pageviews:", e);
@@ -176,12 +176,12 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
 
   .get("/events/total", async ({ error, set }) => {
     try {
-      const lengrh = prisma.eventLog.count();
+      const data = await prisma.eventLog.count();
 
       set.status = 200;
       return createApiResponse({
         success: true,
-        data: lengrh,
+        data,
       });
     } catch (e) {
       console.error("Error fetching events:", e);
