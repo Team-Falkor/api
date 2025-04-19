@@ -1,6 +1,6 @@
 {
   "name": "api-elysia",
-  "version": "1.0.52",
+  "version": "1.0.53",
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
