@@ -91,7 +91,7 @@ export const rateLimitPlugin = (userOptions: RateLimitOptions = {}) => {
 
   return new Elysia().onBeforeHandle(
     { as: options.scope },
-    ({ request, set, path, server, error, headers }) => {
+    ({ request, set, path, server, error }) => {
       if (request.method === "OPTIONS") {
         options.verbose && console.debug(`Skipping rate-limit for OPTIONS`);
         return;

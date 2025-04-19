@@ -1,9 +1,11 @@
 import Elysia from "elysia";
 import { AnalyticsHandler } from "../../handlers/analytics";
+import { getClientIp } from "../../utils/ip";
 import { rateLimitPlugin } from "../../utils/plugins/rate-limit";
 import { createApiResponse } from "../../utils/response";
 import { analyticsAdminRoutes } from "./admin";
 import { eventSchema, pageviewSchema } from "./schema";
+import { getCountryCodeFromIp } from "./utils/geo";
 
 const analytics = new AnalyticsHandler();
 
@@ -18,9 +20,16 @@ export const analyticsRoute = new Elysia({ prefix: "/analytics" })
   )
   .post(
     "/pageview",
-    async ({ body, set }) => {
+    async (ctx) => {
+      const { body, set } = ctx;
       try {
+        if (!body.countryCode) {
+          const ip = getClientIp(ctx);
+          body.countryCode = await getCountryCodeFromIp(ip);
+        }
+
         await analytics.recordPageView(body);
+
         set.status = 201;
         return createApiResponse({
           success: true,

@@ -5,8 +5,6 @@ import { isValidUUID, generateUUID as uuidv4 } from "../../utils/uuid";
 export class AnalyticsHandler {
   private db = prisma;
 
-  // ─── PUBLIC WRITE METHODS ────────────────────────────────────────────────
-
   async recordPageView(data: {
     path: string;
     userAgent?: string;
