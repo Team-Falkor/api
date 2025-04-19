@@ -1,6 +1,7 @@
 import Elysia from "elysia";
 import { AnalyticsHandler } from "../../handlers/analytics";
 import { requireAdminPlugin } from "../../utils/plugins";
+import { prisma } from "../../utils/prisma";
 import { createApiResponse } from "../../utils/response";
 import { aggregateMetricsSchema, dataRetentionSchema } from "./schema";
 
@@ -9,7 +10,7 @@ const analytics = new AnalyticsHandler();
 export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
   .use(requireAdminPlugin)
 
-  // ─── List Data‑Retention Policies ───────────────────────────────────────────
+  //  List Data‑Retention Policies
   .get("/retention", async ({ query, set }) => {
     try {
       const skip = Number(query.skip ?? 0);
@@ -30,7 +31,7 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
     }
   })
 
-  // ─── Get Pageviews ──────────────────────────────────────────────────────────
+  //  Get Pageviews
   .get("/pageviews", async ({ query, set }) => {
     try {
       const skip = Number(query.skip ?? 0);
@@ -53,7 +54,7 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
     }
   })
 
-  // ─── Get Events ─────────────────────────────────────────────────────────────
+  //  Get Events
   .get("/events", async ({ query, set }) => {
     try {
       const skip = Number(query.skip ?? 0);
@@ -77,7 +78,7 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
     }
   })
 
-  // ─── Update a Data‑Retention Policy ────────────────────────────────────────
+  //  Update a Data‑Retention Policy
   .patch(
     "/retention",
     async ({ body, set }) => {
@@ -100,7 +101,7 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
     { body: dataRetentionSchema }
   )
 
-  // ─── Fetch Aggregate Metrics ───────────────────────────────────────────────
+  //  Fetch Aggregate Metrics
   .get("/metrics", async ({ query, set }) => {
     try {
       const { metricType, period, startTime, endTime } = query;
@@ -125,7 +126,7 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
     }
   })
 
-  // ─── Create / Update Aggregate Metrics ────────────────────────────────────
+  //  Create / Update Aggregate Metrics
   .post(
     "/metrics/aggregate",
     async ({ body, set }) => {
@@ -146,4 +147,51 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
       }
     },
     { body: aggregateMetricsSchema }
-  );
+  )
+
+  // TOTAL Page Views
+  .get("/pageviews", async ({ set, error }) => {
+    try {
+      const lengrh = prisma.pageView.count();
+
+      set.status = 200;
+      return createApiResponse({
+        success: true,
+        data: lengrh,
+      });
+    } catch (e) {
+      console.error("Error fetching pageviews:", e);
+
+      return error(
+        500,
+        createApiResponse({
+          success: false,
+          message: "Failed to fetch pageviews",
+        })
+      );
+    }
+  })
+
+  // TOTAL Events
+
+  .get("/events", async ({ error, set }) => {
+    try {
+      const lengrh = prisma.eventLog.count();
+
+      set.status = 200;
+      return createApiResponse({
+        success: true,
+        data: lengrh,
+      });
+    } catch (e) {
+      console.error("Error fetching events:", e);
+
+      return error(
+        500,
+        createApiResponse({
+          success: false,
+          message: "Failed to fetch events",
+        })
+      );
+    }
+  });

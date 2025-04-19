@@ -1,6 +1,7 @@
 import Elysia, { t } from "elysia";
 import { ProviderHandler } from "../../../handlers/providers";
 import { requireAdminPlugin } from "../../../utils/plugins";
+import { prisma } from "../../../utils/prisma";
 import { createApiResponse } from "../../../utils/response";
 
 const provider = new ProviderHandler();
@@ -151,4 +152,32 @@ export const providerAdminRoutes = new Elysia({ prefix: "/admin" })
         id: t.Number(),
       }),
     }
-  );
+  )
+
+  // Total Providers
+  .get("/total", async ({ set, error }) => {
+    try {
+      // Get total providers
+      const totalProviders = await prisma.provider.count();
+
+      set.status = 200;
+      return createApiResponse({
+        success: true,
+        message: "Total providers retrieved successfully",
+        data: totalProviders,
+      });
+    } catch (e) {
+      console.error(
+        "Error retrieving total providers:",
+        e instanceof Error ? e.message : String(e)
+      );
+      return error(
+        500,
+        createApiResponse({
+          success: false,
+          message: "Failed to retrieve total providers",
+          error: true,
+        })
+      );
+    }
+  });
