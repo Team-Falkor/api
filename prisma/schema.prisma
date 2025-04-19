@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  // output   = "../prisma/generated"
 }
 
 datasource db {
@@ -76,4 +77,55 @@ model HealthCheckState {
   id                      Int      @id @default(1)
   lastCheckCompletionTime DateTime
   wasLastCheckSuccessful  Boolean
+}
+
+// Analytics models focused on privacy and GDPR compliance
+
+model PageView {
+  id         String   @id @default(uuid())
+  path       String // URL path visited
+  timestamp  DateTime @default(now())
+  // Anonymized visitor data
+  sessionId  String // Hashed session identifier
+  deviceType String? // Mobile, desktop, tablet
+  browser    String? // Browser type
+  country    String? // Country code only
+
+  // No IP addresses or personal identifiers stored
+  @@index([timestamp])
+  @@index([path])
+}
+
+model EventLog {
+  id        String   @id @default(uuid())
+  eventType String // Type of interaction
+  context   Json? // Additional anonymous context
+  timestamp DateTime @default(now())
+  sessionId String // Hashed session identifier
+  path      String // URL where event occurred
+
+  @@index([eventType])
+  @@index([timestamp])
+}
+
+model AggregateMetrics {
+  id         String   @id @default(uuid())
+  metricType String // Type of metric being aggregated
+  value      Int // Aggregated value
+  period     String // Aggregation period (hourly, daily, weekly, monthly)
+  startTime  DateTime // Start of aggregation period
+  endTime    DateTime // End of aggregation period
+
+  @@unique([metricType, period, startTime])
+  @@index([metricType, period])
+}
+
+model DataRetentionPolicy {
+  id                    Int      @id @default(autoincrement())
+  dataType              String   @unique // Type of data this policy applies to
+  retentionDays         Int // Number of days to retain data
+  anonymizationRequired Boolean  @default(true)
+  lastCleanup           DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }

@@ -47,7 +47,6 @@ const getClientIdentifier = (
       "unknown";
 
     if (ip && typeof ip === "object" && "address" in ip) {
-      // @ts-ignore
       ip = ip.address;
     }
 

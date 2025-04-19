@@ -30,8 +30,9 @@ export function generateUUID(): string {
  * @param uuid The string to validate
  * @returns True if the string is a valid UUID, false otherwise
  */
-export function isValidUUID(uuid: string): boolean {
+export function isValidUUID(uuid: unknown) {
   const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
+    /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
+
+  return typeof uuid === "string" && uuidRegex.test(uuid);
 }
