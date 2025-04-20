@@ -1,7 +1,6 @@
 import Elysia from "elysia";
 import { AnalyticsHandler } from "../../handlers/analytics";
 import { getClientIp } from "../../utils/ip";
-import { rateLimitPlugin } from "../../utils/plugins/rate-limit";
 import { createApiResponse } from "../../utils/response";
 import { analyticsAdminRoutes } from "./admin";
 import { eventSchema, pageviewSchema } from "./schema";
@@ -10,14 +9,6 @@ import { getCountryCodeFromIp } from "./utils/geo";
 const analytics = new AnalyticsHandler();
 
 export const analyticsRoute = new Elysia({ prefix: "/analytics" })
-  .use(
-    rateLimitPlugin({
-      windowMs: 60_000, // 1 minute
-      max: 100, // 100 requests per minute
-      message: "Too many analytics requests, please try again later.",
-      skipPaths: ["/analytics/admin/*"],
-    })
-  )
   .post(
     "/pageview",
     async (ctx) => {

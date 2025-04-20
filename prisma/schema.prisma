@@ -129,3 +129,38 @@ model DataRetentionPolicy {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
+
+enum Phase {
+  PRE_LAUNCH
+  LAUNCH
+  POST_LAUNCH
+  FUTURE
+}
+
+enum Status {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model RoadmapEvent {
+  id     Int                @id @default(autoincrement())
+  phase  Phase              @unique
+  status Status
+  items  RoadmapEventItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RoadmapEventItem {
+  id             Int           @id @default(autoincrement())
+  title          String
+  completed      Boolean
+  category       String?
+  RoadmapEvent   RoadmapEvent? @relation(fields: [roadmapEventId], references: [id])
+  roadmapEventId Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -100,7 +100,7 @@
 
     "@sinclair/typebox": ["@sinclair/typebox@0.34.33", "", {}, "sha512-5HAV9exOMcXRUxo+9iYB5n09XxzCXnfy4VTNW4xnDv+FgjzAGY989C28BIdljKqmF+ZltUwujE3aossvcVtq6g=="],
 
-    "@team-falkor/shared-types": ["@team-falkor/shared-types@1.0.0", "", {}, "sha512-g3t9FhS+9Nbe6YRyiFZbfCszzR9BWAe7mUQ93RSJVDEHKeExFMUSjexSAz4m5VwlNlyD2M+4+FqcS0SMsnG/yQ=="],
+    "@team-falkor/shared-types": ["@team-falkor/shared-types@1.0.1", "", {}, "sha512-3LPh8fXfUrUlF/FpT4o+kjlAnJeHDhqlaUY0Mp8PByLVN2gbM/OyDv52d4UtSr7hMjN56eRaZR/iXlAIRXbRvg=="],
 
     "@types/luxon": ["@types/luxon@3.4.2", "", {}, "sha512-TifLZlFudklWlMBfhubvgqTXRzLDI5pCbGa4P8a3wPyUQSW+1xQ5eDsreP9DWHX3tjq1ke96uYG/nwundroWcA=="],
 

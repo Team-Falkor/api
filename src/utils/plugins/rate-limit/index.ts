@@ -3,7 +3,7 @@ import ms from "ms";
 import { RateLimitOptions, RateLimitStore } from "../../../@types/plugins";
 import { Console } from "../../console";
 import { createApiResponse } from "../../response";
-import { buildSkipMatcher } from "./buildSkipMatcher";
+import { buildSkipMatcher, skipMatcher } from "./buildSkipMatcher";
 
 const console = new Console({ prefix: "[Rate Limit]:" });
 
@@ -116,8 +116,9 @@ export const rateLimitPlugin = (userOptions: RateLimitOptions = {}) => {
 
       if (options.tiers) {
         for (const tier of options.tiers) {
+          const tierShouldApply = skipMatcher(tier.path);
           if (
-            path.startsWith(tier.path) &&
+            tierShouldApply(path) &&
             (!tier.method || tier.method === "ALL" || tier.method === method)
           ) {
             tierMax = tier.max ?? tierMax;
