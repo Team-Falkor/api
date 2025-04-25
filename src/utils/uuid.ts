@@ -1,38 +1,33 @@
 import crypto from "crypto";
 
 /**
- * Generates a RFC 4122 compliant UUID v4 (random-based)
+ * Generates a RFC 4122–compliant, cryptographically secure UUID v4.
  *
  * @returns A randomly generated UUID string
  */
 export function generateUUID(): string {
-  // Generate 16 random bytes
-  const bytes = crypto.randomBytes(16);
-
-  // Set the version (4) and variant (RFC4122) bits
-  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
-  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant RFC4122
-
-  // Convert to hex string with proper formatting
-  const hex = bytes.toString("hex");
-  return [
-    hex.substring(0, 8),
-    hex.substring(8, 12),
-    hex.substring(12, 16),
-    hex.substring(16, 20),
-    hex.substring(20, 32),
-  ].join("-");
+  // Native OS-backed CSPRNG, non-blocking
+  return crypto.randomUUID();
 }
 
 /**
- * Validates if a string is a valid UUID
+ * Strictly validates only UUIDv4 strings.
  *
- * @param uuid The string to validate
- * @returns True if the string is a valid UUID, false otherwise
+ * • Rejects nil (000…0), max (FFF…F), non-v4, and other variants
  */
-export function isValidUUID(uuid: unknown) {
-  const uuidRegex =
-    /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
+export function isValidUUID(uuid: unknown): uuid is string {
+  if (typeof uuid !== "string") return false;
+  const uuidV4Regex =
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+  return uuidV4Regex.test(uuid);
+}
 
-  return typeof uuid === "string" && uuidRegex.test(uuid);
+/**
+ * Compare two UUIDs in constant time to avoid timing attacks.
+ */
+export function compareUUIDs(a: string, b: string): boolean {
+  if (!isValidUUID(a) || !isValidUUID(b)) return false;
+  const bufA = Buffer.from(a.replace(/-/g, ""), "hex");
+  const bufB = Buffer.from(b.replace(/-/g, ""), "hex");
+  return crypto.timingSafeEqual(bufA, bufB);
 }
