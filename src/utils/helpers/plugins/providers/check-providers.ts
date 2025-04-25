@@ -43,6 +43,7 @@ export const checkProviders = async (): Promise<boolean> => {
     limit(async () => {
       const { id, setupUrl, failureCount, setupJSON: rawSetupJSON } = provider;
 
+      // 1) URL‐format failures
       if (
         !setupUrl ||
         (!setupUrl.startsWith("http://") && !setupUrl.startsWith("https://"))
@@ -52,7 +53,9 @@ export const checkProviders = async (): Promise<boolean> => {
         const updateData: { failureCount: number; approved?: boolean } = {
           failureCount: newFailureCount,
         };
-        if (newFailureCount >= MAX_FAILURES) updateData.approved = false;
+        // <-- only unapprove if strictly greater than MAX_FAILURES
+        if (newFailureCount > MAX_FAILURES) updateData.approved = false;
+
         updatePromises.push(
           prisma.provider.update({ where: { id }, data: updateData })
         );
@@ -67,6 +70,7 @@ export const checkProviders = async (): Promise<boolean> => {
         const response = await fetch(setupUrl, { signal: controller.signal });
         clearTimeout(timeoutId);
 
+        // 2) HTTP errors
         if (!response.ok) {
           const responseText = await response
             .text()
@@ -78,8 +82,8 @@ export const checkProviders = async (): Promise<boolean> => {
           const updateData: { failureCount: number; approved?: boolean } = {
             failureCount: newFailureCount,
           };
-
-          if (newFailureCount >= MAX_FAILURES) {
+          // <-- only unapprove if strictly greater than MAX_FAILURES
+          if (newFailureCount > MAX_FAILURES) {
             console.error(
               `Provider ${id}: Unapproving due to repeated failures.`
             );
@@ -93,6 +97,7 @@ export const checkProviders = async (): Promise<boolean> => {
           return;
         }
 
+        // 3) JSON‐parse failures
         let fetchedJson: unknown;
         try {
           console.info(`Provider ${id}: Fetching JSON from ${setupUrl}...`);
@@ -104,7 +109,9 @@ export const checkProviders = async (): Promise<boolean> => {
           const updateData: { failureCount: number; approved?: boolean } = {
             failureCount: newFailureCount,
           };
-          if (newFailureCount >= MAX_FAILURES) updateData.approved = false;
+          // <-- only unapprove if strictly greater than MAX_FAILURES
+          if (newFailureCount > MAX_FAILURES) updateData.approved = false;
+
           updatePromises.push(
             prisma.provider.update({ where: { id }, data: updateData })
           );
@@ -112,6 +119,7 @@ export const checkProviders = async (): Promise<boolean> => {
           return;
         }
 
+        // 4) validation failures against your schema
         let fetchedSetup: PluginSetupJSON;
         try {
           fetchedSetup = handler.validate(fetchedJson);
@@ -124,7 +132,9 @@ export const checkProviders = async (): Promise<boolean> => {
           const updateData: { failureCount: number; approved?: boolean } = {
             failureCount: newFailureCount,
           };
-          if (newFailureCount >= MAX_FAILURES) updateData.approved = false;
+          // <-- only unapprove if strictly greater than MAX_FAILURES
+          if (newFailureCount > MAX_FAILURES) updateData.approved = false;
+
           updatePromises.push(
             prisma.provider.update({ where: { id }, data: updateData })
           );
@@ -132,9 +142,14 @@ export const checkProviders = async (): Promise<boolean> => {
           return;
         }
 
+        // 5) DB‐stored‐JSON validation
         let dbSetup: PluginSetupJSON;
         try {
-          dbSetup = handler.validate(rawSetupJSON);
+          const json =
+            typeof rawSetupJSON === "string"
+              ? JSON.parse(rawSetupJSON)
+              : rawSetupJSON;
+          dbSetup = handler.validate(json);
         } catch (dbError) {
           const message = extractErrorMessage(dbError);
           console.warn(`Provider ${id}: Corrupted DB setupJSON. ${message}`);
@@ -142,7 +157,9 @@ export const checkProviders = async (): Promise<boolean> => {
           const updateData: { failureCount: number; approved?: boolean } = {
             failureCount: newFailureCount,
           };
-          if (newFailureCount >= MAX_FAILURES) updateData.approved = false;
+          // <-- only unapprove if strictly greater than MAX_FAILURES
+          if (newFailureCount > MAX_FAILURES) updateData.approved = false;
+
           updatePromises.push(
             prisma.provider.update({ where: { id }, data: updateData })
           );
@@ -150,6 +167,7 @@ export const checkProviders = async (): Promise<boolean> => {
           return;
         }
 
+        // 6) version sync / reset failureCount
         if (fetchedSetup.version !== dbSetup.version) {
           console.info(
             `Provider ${id}: Version mismatch (DB: ${dbSetup.version}, Remote: ${fetchedSetup.version}). Updating...`
@@ -188,8 +206,8 @@ export const checkProviders = async (): Promise<boolean> => {
         const updateData: { failureCount: number; approved?: boolean } = {
           failureCount: newFailureCount,
         };
-
-        if (newFailureCount >= MAX_FAILURES) {
+        // <-- only unapprove if strictly greater than MAX_FAILURES
+        if (newFailureCount > MAX_FAILURES) {
           console.error(`Provider ${id}: Too many failures. Unapproving.`);
           updateData.approved = false;
         }
