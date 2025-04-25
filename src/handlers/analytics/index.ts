@@ -150,12 +150,21 @@ export class AnalyticsHandler {
     const where: Prisma.PageViewWhereInput = {};
     if (params.path) where.path = params.path;
 
-    return this.db.pageView.findMany({
-      where,
-      skip: params.skip,
-      take: params.take,
-      orderBy: { timestamp: "desc" },
-    });
+    const [data, total] = await Promise.all([
+      this.db.pageView.findMany({
+        where,
+        skip: params.skip,
+        take: params.take,
+        orderBy: { timestamp: "desc" },
+      }),
+      this.db.pageView.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      totalPages: Math.ceil(total / params.take),
+    };
   }
 
   /** Fetch events with pagination and optional filters */
@@ -169,11 +178,20 @@ export class AnalyticsHandler {
     if (params.eventType) where.eventType = params.eventType;
     if (params.path) where.path = params.path;
 
-    return this.db.eventLog.findMany({
-      where,
-      skip: params.skip,
-      take: params.take,
-      orderBy: { timestamp: "desc" },
-    });
+    const [data, total] = await Promise.all([
+      this.db.eventLog.findMany({
+        where,
+        skip: params.skip,
+        take: params.take,
+        orderBy: { timestamp: "desc" },
+      }),
+      this.db.eventLog.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      totalPages: Math.ceil(total / params.take),
+    };
   }
 }

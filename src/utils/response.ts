@@ -1,30 +1,9 @@
-type ApiError =
-  | {
-      message: string;
-      code?: string;
-    }
-  | boolean;
+import { ApiResponse } from "@team-falkor/shared-types";
 
-interface ApiResponseInput<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  error?: ApiError;
-}
+export const createApiResponse = <T>(input: ApiResponse<T>): ApiResponse<T> => {
+  const { success, message, data, error, meta } = input;
 
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  error?: ApiError;
-}
-
-export const createApiResponse = <T>(
-  input: ApiResponseInput<T>
-): ApiResponse<T> => {
-  const { success, message, data, error } = input;
-
-  let finalError: ApiError | undefined = error;
+  let finalError: ApiResponse<T>["error"] | undefined = error;
 
   if (!success && !finalError) {
     console.warn(
@@ -47,5 +26,6 @@ export const createApiResponse = <T>(
     ...(message && { message }),
     ...(success && data !== undefined && { data }),
     ...(!success && finalError && { error: finalError }),
+    ...(meta && { meta }),
   };
 };

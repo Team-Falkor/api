@@ -7,7 +7,7 @@
         "@elysiajs/cors": "^1.2.0",
         "@elysiajs/jwt": "^1.2.0",
         "@prisma/client": "^6.6.0",
-        "@team-falkor/shared-types": "^1.0.0",
+        "@team-falkor/shared-types": "^1.0.1",
         "bcryptjs": "^3.0.2",
         "elysia": "latest",
         "elysia-rate-limit": "^4.3.0",
@@ -100,7 +100,7 @@
 
     "@sinclair/typebox": ["@sinclair/typebox@0.34.33", "", {}, "sha512-5HAV9exOMcXRUxo+9iYB5n09XxzCXnfy4VTNW4xnDv+FgjzAGY989C28BIdljKqmF+ZltUwujE3aossvcVtq6g=="],
 
-    "@team-falkor/shared-types": ["@team-falkor/shared-types@1.0.1", "", {}, "sha512-3LPh8fXfUrUlF/FpT4o+kjlAnJeHDhqlaUY0Mp8PByLVN2gbM/OyDv52d4UtSr7hMjN56eRaZR/iXlAIRXbRvg=="],
+    "@team-falkor/shared-types": ["@team-falkor/shared-types@1.0.3", "", {}, "sha512-sJwHb99D7QD1iDhjLclGx7TiUDo3IRxmu+Nk+SJzgXpwG/re2QYCy1x2Fof4K5TLlMRgYQSsZ8lKS/+7D2MUWA=="],
 
     "@types/luxon": ["@types/luxon@3.4.2", "", {}, "sha512-TifLZlFudklWlMBfhubvgqTXRzLDI5pCbGa4P8a3wPyUQSW+1xQ5eDsreP9DWHX3tjq1ke96uYG/nwundroWcA=="],
 

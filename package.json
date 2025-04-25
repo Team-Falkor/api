@@ -13,7 +13,7 @@
     "@elysiajs/cors": "^1.2.0",
     "@elysiajs/jwt": "^1.2.0",
     "@prisma/client": "^6.6.0",
-    "@team-falkor/shared-types": "^1.0.1",
+    "@team-falkor/shared-types": "^1.0.3",
     "bcryptjs": "^3.0.2",
     "elysia": "latest",
     "elysia-rate-limit": "^4.3.0",

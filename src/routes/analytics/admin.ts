@@ -42,11 +42,16 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
       const take = Number(query.take ?? 50);
       const path = query.path as string | undefined;
 
-      const data = await analytics.getPageViews({ skip, take, path });
+      const result = await analytics.getPageViews({ skip, take, path });
       set.status = 200;
       return createApiResponse({
         success: true,
-        data,
+        data: result.data,
+        meta: {
+          total: result.total,
+          totalPages: result.totalPages,
+          currentPage: Math.floor(skip / take) + 1,
+        },
       });
     } catch (e) {
       console.error("Error fetching pageviews:", e);
@@ -66,11 +71,16 @@ export const analyticsAdminRoutes = new Elysia({ prefix: "/admin" })
       const eventType = query.eventType as string | undefined;
       const path = query.path as string | undefined;
 
-      const data = await analytics.getEvents({ skip, take, eventType, path });
+      const result = await analytics.getEvents({ skip, take, eventType, path });
       set.status = 200;
       return createApiResponse({
         success: true,
-        data,
+        data: result.data,
+        meta: {
+          total: result.total,
+          totalPages: result.totalPages,
+          currentPage: Math.floor(skip / take) + 1,
+        },
       });
     } catch (e) {
       console.error("Error fetching events:", e);
