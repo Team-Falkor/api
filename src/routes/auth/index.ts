@@ -8,6 +8,7 @@ import { createApiResponse } from "../../utils/response";
 import { loginBodySchema, signupBodySchema } from "./schema";
 
 export const authRoutes = new Elysia({ prefix: "/auth" })
+  .use(authPlugin)
   .post("/login", login, { body: loginBodySchema })
   .post("/sign-up", register, {
     body: signupBodySchema,
@@ -60,6 +61,5 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     },
   })
   .post("/refresh", refresh)
-  .use(authPlugin)
   .post("/logout", logout)
   .get("/me", me);
