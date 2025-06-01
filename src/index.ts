@@ -7,6 +7,7 @@ import { providersRoute } from "./routes/plugins/providers";
 import { roadmapRoutes } from "./routes/roadmap";
 import { startProviderCheckScheduler } from "./utils/helpers/plugins/providers/check-providers-interval";
 import { rateLimitPlugin } from "./utils/plugins";
+import { steamRoutes } from "./routes/steam";
 
 export const app = new Elysia()
   .use(
@@ -36,6 +37,7 @@ export const app = new Elysia()
   .get("/", () => ({ message: "Hello from falkor" }))
   .use(authRoutes)
   .use(steamAchievementsRoutes)
+  .use(steamRoutes)
   .use(providersRoute)
   .use(analyticsRoute)
   .use(roadmapRoutes)
