@@ -122,8 +122,8 @@ model AggregateMetrics {
 
 model DataRetentionPolicy {
   id                    Int      @id @default(autoincrement())
-  dataType              String   @unique // Type of data this policy applies to
-  retentionDays         Int // Number of days to retain data
+  dataType              String   @unique
+  retentionDays         Int
   anonymizationRequired Boolean  @default(true)
   lastCleanup           DateTime @default(now())
   createdAt             DateTime @default(now())
