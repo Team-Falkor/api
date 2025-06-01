@@ -13,7 +13,6 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
   .post("/sign-up", register, {
     body: signupBodySchema,
     error({ set, error }) {
-      // Prisma unique constraint violation (e.g. duplicate email/username)
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"

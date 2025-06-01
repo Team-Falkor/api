@@ -11,8 +11,9 @@ export const steamAchievementsRoutes = new Elysia({ prefix: "/achievements" })
   .use(
     cachePlugin({
       namespace: "steam_achievements",
-      maxSize: 100, // Consider if this size is sufficient for your needs
-      ttl: 60 * 60 * 24, // Default TTL in seconds (24 hours)
+      maxSize: 100,
+      persistence: true, 
+      ttl: 60 * 60 * 12, // Default TTL in seconds (12 hours)
       logLevel: "info",
     })
   )

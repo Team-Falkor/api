@@ -11,9 +11,9 @@ export const steamRoutes = new Elysia({ prefix: "/steam" })
   .use(
     cachePlugin({
       namespace: "steam_api",
-      maxSize: 200,
-      ttl: 60 * 60 * 1,
-      logLevel: "info",
+      maxSize: 200, 
+      ttl: 60 * 60 * 1, // 1 hour
+      logLevel: "info", 
     })
   )
   .get(
