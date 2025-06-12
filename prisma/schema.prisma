@@ -164,3 +164,27 @@ model RoadmapEventItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model SaveDataInfo {
+  id       Int     @id @default(autoincrement())
+  steamId  String  @unique
+  gameName String?
+
+  // Save locations
+  windows String?
+  mac     String?
+  linux   String?
+
+  // Metadata
+  lastFetched DateTime @default(now())
+  isValid     Boolean  @default(true)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes for performance
+  @@index([steamId])
+  @@index([lastFetched])
+  @@map("save_data_info")
+}
