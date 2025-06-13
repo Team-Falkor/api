@@ -1,13 +1,13 @@
 // utils/jwt.ts
-import { JWTPayloadSpec } from "@elysiajs/jwt";
+import type { JWTPayloadSpec } from "@elysiajs/jwt";
 
 export function isValidJWTPayload(
-  payload: unknown
+	payload: unknown,
 ): payload is JWTPayloadSpec & { sub: string } {
-  return (
-    typeof payload === "object" &&
-    payload !== null &&
-    "sub" in payload &&
-    typeof (payload as any).sub === "string"
-  );
+	return (
+		typeof payload === "object" &&
+		payload !== null &&
+		"sub" in payload &&
+		typeof payload.sub === "string"
+	);
 }

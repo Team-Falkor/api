@@ -1,2 +1,2 @@
 export * from "./auth";
-export * from "./steam"
+export * from "./steam";
