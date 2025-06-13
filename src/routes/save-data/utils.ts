@@ -38,6 +38,11 @@ function resolveWikiTemplates(text: string): string {
 		.replace(/\{\{p\|localappdata\}\}/gi, "%LOCALAPPDATA%")
 		.replace(/\{\{p\|appdata\}\}/gi, "%APPDATA%")
 		.replace(/\{\{p\|documents\}\}/gi, "%USERPROFILE%\\Documents")
+		.replace(/\{\{p\|userprofile\\Documents\}\}/gi, "%USERPROFILE%\\Documents")
+		.replace(
+			/\{\{p\|userprofile\\\\Documents\}\}/gi,
+			"%USERPROFILE%\\Documents",
+		)
 		.replace(/\{\{p\|steam\}\}/gi, "<Steam-folder>")
 		.replace(/\{\{p\|game\}\}/gi, "<Game-folder>")
 		.replace(/\{\{p\|home\}\}/gi, "~")

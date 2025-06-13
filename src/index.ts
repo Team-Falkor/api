@@ -31,6 +31,12 @@ export const app = new Elysia()
 					method: "ALL",
 					windowMs: 60_000,
 				},
+				{
+					path: "*/save-data/**",
+					max: 100,
+					method: "ALL",
+					windowMs: 60_000,
+				},
 			],
 		}),
 	)
