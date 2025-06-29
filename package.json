@@ -1,15 +1,27 @@
 {
-  "name": "api-new",
-  "version": "1.0.50",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
-  },
-  "dependencies": {
-    "elysia": "latest"
-  },
-  "devDependencies": {
-    "bun-types": "latest"
-  },
-  "module": "src/index.js"
+	"name": "api-new",
+	"version": "1.0.50",
+	"scripts": {
+		"start": "bun run src/index.ts",
+		"dev": "bun run --watch src/index.ts",
+		"db:pull": "prisma db pull",
+		"db:push": "prisma db push",
+		"db:generate": "prisma generate"
+	},
+	"dependencies": {
+		"@elysiajs/cors": "^1.3.3",
+		"@elysiajs/swagger": "^1.3.1",
+		"@prisma/client": "^6.10.1",
+		"@team-falkor/shared-types": "^1.0.7",
+		"better-auth": "^1.2.12",
+		"elysia": "latest",
+		"ip-location-api": "^3.0.3",
+		"p-limit": "^6.2.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.0.6",
+		"bun-types": "latest",
+		"prisma": "^6.10.1"
+	},
+	"module": "src/index.js"
 }
