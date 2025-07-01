@@ -12,6 +12,8 @@ import { steamRoutes } from "./modules/steam";
 import { rateLimitPlugin } from "./plugins/rate-limit";
 import { Console } from "./utils/console";
 
+const version = require("../package.json").version;
+
 const betterAuthView = (context: Context) => {
 	const BETTER_AUTH_ACCEPT_METHODS = ["POST", "GET"];
 	// validate request method
@@ -53,7 +55,7 @@ export const app = new Elysia()
 			documentation: {
 				info: {
 					title: "Falkor API",
-					version: "2.0.0",
+					version,
 					description:
 						"The Falkor API is a RESTful API that provides access to the Falkor platform.",
 				},
