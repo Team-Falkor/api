@@ -1,6 +1,6 @@
 {
 	"name": "api-new",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"scripts": {
 		"start": "bun run src/index.ts",
 		"dev": "bun run --watch src/index.ts",
