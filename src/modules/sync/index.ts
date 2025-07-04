@@ -50,6 +50,26 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 													userId: true,
 												},
 											},
+											// Include global achievements for this game
+											achievements: {
+												select: {
+													id: true,
+													displayName: true,
+													name: true,
+													description: true,
+													// Include user-specific achievement status for the current user
+													userAchievements: {
+														where: {
+															userId: user.id,
+														},
+														select: {
+															id: true,
+															unlocked: true,
+															unlockedAt: true,
+														},
+													},
+												},
+											},
 										},
 									},
 								},
@@ -60,7 +80,6 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 			});
 
 			if (!userWithListsAndGameStats) {
-				// If user not found, return an error API response with a 404 status
 				return createApiResponse(
 					{
 						success: false,
@@ -74,11 +93,11 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 				);
 			}
 
-			// On success, return the data wrapped in a success API response
 			return createApiResponse({
 				success: true,
 				data: userWithListsAndGameStats,
-				message: "User lists and game stats retrieved successfully.",
+				message:
+					"User lists, games, stats, and achievements retrieved successfully.",
 			});
 		},
 		{
@@ -107,6 +126,19 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 								},
 							},
 						},
+						{
+							// Also include games if the user has an achievement for it,
+							// even if not in a list or having gameStats
+							achievements: {
+								some: {
+									userAchievements: {
+										some: {
+											userId: user.id,
+										},
+									},
+								},
+							},
+						},
 					],
 				},
 				select: {
@@ -126,14 +158,34 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 							lastPlayed: true,
 						},
 					},
+					// Include global achievements for this game
+					achievements: {
+						select: {
+							id: true,
+							displayName: true,
+							name: true,
+							description: true,
+							// Include user-specific achievement status for the current user
+							userAchievements: {
+								where: {
+									userId: user.id,
+								},
+								select: {
+									id: true,
+									unlocked: true,
+									unlockedAt: true,
+								},
+							},
+						},
+					},
 				},
 			});
 
-			// On success, return the games wrapped in a success API response
 			return createApiResponse({
 				success: true,
 				data: games,
-				message: "User's games retrieved successfully.",
+				message:
+					"User's games, stats, and achievements retrieved successfully.",
 			});
 		},
 		{

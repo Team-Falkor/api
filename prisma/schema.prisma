@@ -150,9 +150,10 @@ model User {
   sessions        Session[]
   accounts        Account[]
 
-  // Cloud lists
-  lists     List[]
-  gameStats GameStat[]
+  // Cloud sync
+  lists            List[]
+  gameStats        GameStat[]
+  userAchievements UserAchievement[]
 
   role       String?
   banned     Boolean?
@@ -231,8 +232,9 @@ model Game {
   igdbID  Int    @unique
   steamID Int?   @unique
 
-  listGames ListGame[]
-  gameStats GameStat[]
+  listGames    ListGame[]
+  gameStats    GameStat[]
+  achievements Achievement[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -272,4 +274,41 @@ model GameStat {
   @@unique([gameId, userId])
   @@index([userId])
   @@index([gameId])
+}
+
+model Achievement {
+  id          Int     @id @default(autoincrement())
+  gameId      Int
+  displayName String
+  name        String
+  description String?
+
+  game             Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userAchievements UserAchievement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gameId, name])
+  @@index([gameId])
+}
+
+// Stores a user's unlock status for a specific achievement
+model UserAchievement {
+  id            Int       @id @default(autoincrement())
+  userId        String
+  achievementId Int
+  unlocked      Boolean   @default(false)
+  unlockedAt    DateTime?
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Ensures a user can only have one entry for each achievement
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([achievementId])
 }
