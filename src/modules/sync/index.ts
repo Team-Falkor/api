@@ -50,6 +50,7 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 													userId: true,
 												},
 											},
+
 											// Include global achievements for this game
 											achievements: {
 												select: {
