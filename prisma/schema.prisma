@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
   // output   = "../prisma/generated"
@@ -151,6 +150,10 @@ model User {
   sessions        Session[]
   accounts        Account[]
 
+  // Cloud lists
+  lists     List[]
+  gameStats GameStat[]
+
   role       String?
   banned     Boolean?
   banReason  String?
@@ -206,4 +209,67 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+model List {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  listGames ListGame[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Game {
+  id      Int    @id @default(autoincrement())
+  name    String @unique
+  igdbID  Int    @unique
+  steamID Int?   @unique
+
+  listGames ListGame[]
+  gameStats GameStat[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ListGame {
+  id      Int      @id @default(autoincrement())
+  listId  Int
+  gameId  Int
+  addedAt DateTime @default(now())
+
+  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([listId, gameId])
+  @@index([listId])
+  @@index([gameId])
+}
+
+model GameStat {
+  id     Int    @id @default(autoincrement())
+  gameId Int
+  userId String
+
+  playtime   Int
+  lastPlayed DateTime?
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gameId, userId])
+  @@index([userId])
+  @@index([gameId])
 }
