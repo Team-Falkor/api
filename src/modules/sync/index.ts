@@ -1,8 +1,17 @@
 import Elysia from "elysia";
 import { betterAuthPlugin } from "@/plugins/betterAuthPlugin";
+import { cachePlugin } from "@/plugins/cachePlugin";
 import { createApiResponse, prisma } from "@/utils";
 
 export const syncRoutes = new Elysia({ prefix: "/sync" })
+	.use(
+		cachePlugin({
+			namespace: "sync",
+			maxSize: 500,
+			ttl: 60 * 5, // 5 minutes
+			logLevel: "info",
+		}),
+	)
 	.use(betterAuthPlugin)
 	.get(
 		"/lists",
