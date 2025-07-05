@@ -5,6 +5,9 @@ import { admin, username } from "better-auth/plugins";
 
 const prisma = new PrismaClient();
 
+const BETTER_AUTH_TRUSTED_ORIGINS =
+	process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",") || [];
+
 export const auth = betterAuth({
 	database: prismaAdapter(prisma, {
 		provider: "sqlite",
@@ -13,5 +16,6 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 	},
+	trustedOrigins: BETTER_AUTH_TRUSTED_ORIGINS,
 	plugins: [username(), admin()],
 });

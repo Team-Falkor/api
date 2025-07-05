@@ -20,7 +20,7 @@ const requireAdminRoute = (app: Elysia) =>
 
 		const allowedRoles = ["admin", "owner"];
 
-		if (!user.role || !allowedRoles.includes(user.role.toUpperCase())) {
+		if (!user.role || !allowedRoles.includes(user.role.toLowerCase())) {
 			set.status = 403;
 			throw createApiResponse({
 				success: false,
@@ -51,7 +51,7 @@ export const createRoleGuard = (allowedRoles: string[]) => {
 
 			const user = session.user;
 
-			if (!user.role || !allowedRoles.includes(user.role.toUpperCase())) {
+			if (!user.role || !allowedRoles.includes(user.role.toLowerCase())) {
 				set.status = 403;
 				throw createApiResponse({
 					success: false,

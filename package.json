@@ -1,5 +1,5 @@
 {
-	"name": "api-new",
+	"name": "@team-falkor/api",
 	"version": "2.0.2",
 	"scripts": {
 		"start": "bun run src/index.ts",

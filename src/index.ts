@@ -1,5 +1,4 @@
 import { cors } from "@elysiajs/cors";
-import swagger from "@elysiajs/swagger";
 import { type Context, Elysia } from "elysia";
 import { startProviderCheckScheduler } from "./helpers/plugins/providers/check-providers-interval";
 import { auth } from "./lib/auth";
@@ -27,21 +26,15 @@ const betterAuthView = (context: Context) => {
 export const app = new Elysia()
 	.use(
 		rateLimitPlugin({
-			windowMs: 60_000,
-			max: 50,
+			windowMs: 60_000, // 1 minute
+			max: 15,
 			headers: true,
 			verbose: true,
-			skipPaths: [
-				"/health/?",
-				"/favicon.ico",
-				"/auth/*",
-				"/admin/*",
-				"*/admin/*",
-			],
+			skipPaths: ["/health/?", "/favicon.ico", "/admin/*", "*/admin/*"],
 			tiers: [
 				{
 					path: "*/analytics/**",
-					max: 100,
+					max: 50,
 					method: "ALL",
 					windowMs: 60_000,
 				},
@@ -49,21 +42,16 @@ export const app = new Elysia()
 		}),
 	)
 	.use(cors())
-	.use(
-		swagger({
-			path: "/docs",
-			documentation: {
-				info: {
-					title: "Falkor API",
-					version,
-					description:
-						"The Falkor API is a RESTful API that provides access to the Falkor platform.",
-				},
-			},
-		}),
-	)
 	.all("/auth/*", betterAuthView)
-	.get("/", () => ({ message: "Hello from falkor" }))
+	.get("/health", () => ({ status: "ok" }))
+	.get("/", () => ({
+		message: `Hello from 🐲 Falkor API ${version}`,
+		links: {
+			github: `https://github.com/team-falkor/api`,
+			docs: `https://docs.falkor.app`,
+			app: `https://falkor.moe/download`,
+		},
+	}))
 	.use(steamRoutes)
 	.use(steamAchievementsRoutes)
 	.use(providersRoute)
