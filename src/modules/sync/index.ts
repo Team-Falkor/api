@@ -50,15 +50,12 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 													userId: true,
 												},
 											},
-
-											// Include global achievements for this game
 											achievements: {
 												select: {
 													id: true,
 													displayName: true,
 													name: true,
 													description: true,
-													// Include user-specific achievement status for the current user
 													userAchievements: {
 														where: {
 															userId: user.id,
@@ -94,9 +91,58 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 				);
 			}
 
+			const transformedUserWithLists = {
+				...userWithListsAndGameStats,
+				lists: userWithListsAndGameStats.lists.map((list) => ({
+					...list,
+					listGames: list.listGames.map((listGame) => {
+						const originalGame = listGame.game;
+
+						const gameStatsForUser =
+							originalGame.gameStats.length > 0
+								? originalGame.gameStats[0]
+								: {};
+
+						const achievementsWithCombinedData = originalGame.achievements.map(
+							(achievement) => {
+								const userAchievementForUser =
+									achievement.userAchievements.length > 0
+										? achievement.userAchievements[0]
+										: null;
+
+								const {
+									userAchievements: _userAchievements,
+									...restOfAchievement
+								} = achievement;
+
+								return {
+									...restOfAchievement,
+									unlocked: userAchievementForUser?.unlocked ?? false,
+									unlockedAt: userAchievementForUser?.unlockedAt ?? null,
+									gameStats: gameStatsForUser,
+								};
+							},
+						);
+
+						const { gameStats: _gameStats, ...restOfGame } = originalGame;
+
+						const transformedGame = {
+							...restOfGame,
+							...gameStatsForUser,
+							achievements: achievementsWithCombinedData,
+						};
+
+						return {
+							...listGame,
+							game: transformedGame,
+						};
+					}),
+				})),
+			};
+
 			return createApiResponse({
 				success: true,
-				data: userWithListsAndGameStats,
+				data: transformedUserWithLists,
 				message:
 					"User lists, games, stats, and achievements retrieved successfully.",
 			});
@@ -128,8 +174,6 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 							},
 						},
 						{
-							// Also include games if the user has an achievement for it,
-							// even if not in a list or having gameStats
 							achievements: {
 								some: {
 									userAchievements: {
@@ -159,14 +203,12 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 							lastPlayed: true,
 						},
 					},
-					// Include global achievements for this game
 					achievements: {
 						select: {
 							id: true,
 							displayName: true,
 							name: true,
 							description: true,
-							// Include user-specific achievement status for the current user
 							userAchievements: {
 								where: {
 									userId: user.id,
@@ -182,9 +224,43 @@ export const syncRoutes = new Elysia({ prefix: "/sync" })
 				},
 			});
 
+			const transformedGames = games.map((game) => {
+				const gameStatsForUser =
+					game.gameStats.length > 0 ? game.gameStats[0] : {};
+
+				const achievementsWithCombinedData = game.achievements.map(
+					(achievement) => {
+						const userAchievementForUser =
+							achievement.userAchievements.length > 0
+								? achievement.userAchievements[0]
+								: null;
+
+						const {
+							userAchievements: _userAchievements,
+							...restOfAchievement
+						} = achievement;
+
+						return {
+							...restOfAchievement,
+							unlocked: userAchievementForUser?.unlocked ?? false,
+							unlockedAt: userAchievementForUser?.unlockedAt ?? null,
+							gameStats: gameStatsForUser,
+						};
+					},
+				);
+
+				const { gameStats: _gameStats, ...restOfGame } = game;
+
+				return {
+					...restOfGame,
+					...gameStatsForUser,
+					achievements: achievementsWithCombinedData,
+				};
+			});
+
 			return createApiResponse({
 				success: true,
-				data: games,
+				data: transformedGames,
 				message:
 					"User's games, stats, and achievements retrieved successfully.",
 			});
