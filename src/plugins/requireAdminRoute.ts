@@ -20,6 +20,12 @@ const requireAdminRoute = (app: Elysia) =>
 
 		const allowedRoles = ["admin", "owner"];
 
+		console.log({
+			user,
+			allowedRoles,
+			includes: user.role && allowedRoles.includes(user.role.toLowerCase()),
+		});
+
 		if (!user.role || !allowedRoles.includes(user.role.toLowerCase())) {
 			set.status = 403;
 			throw createApiResponse({
